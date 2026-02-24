@@ -1,5 +1,9 @@
 package kr.hs.after.Tomorang.Service;
 
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.model.CannedAccessControlList;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.PutObjectRequest;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -7,49 +11,63 @@ import kr.hs.after.Tomorang.DAO.memberDAO;
 import kr.hs.after.Tomorang.DTO.LanguageDTO;
 import kr.hs.after.Tomorang.DTO.memberDTO;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value; // lombok.Value와 헷갈리지 마세요!
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
+import java.util.UUID;
 
 @Service
-@RequiredArgsConstructor // 생성자 주입을 @Autowired 대신 편하게 해주는 어노테이션
-public class memberServiceImp implements memberService{
+@RequiredArgsConstructor
+public class memberServiceImp implements memberService {
 
     private final memberDAO dao;
     private final BCryptPasswordEncoder passwordEncoder;
     private final ObjectMapper objectMapper;
+    private final AmazonS3 amazonS3; // S3Config에서 만든 빈 주입
+
+    @Value("${cloud.aws.s3.bucket}")
+    private String bucket;
 
     @Override
-    public void insert(memberDTO dto) {
-        // 1. 비밀번호 암호화
-        dto.setPw(passwordEncoder.encode(dto.getPw()));
+    public void insert(memberDTO dto, MultipartFile image) throws IOException {
+        if (image != null && !image.isEmpty()) {
+            // 1. 중복 방지 파일명 생성
+            String fileName = UUID.randomUUID() + "_" + image.getOriginalFilename();
 
-        try {
-            // 2. language 리스트를 JSON 문자열로 압축해서 langLv에 넣기
-            if (dto.getLanguage() != null) {
-                String json = objectMapper.writeValueAsString(dto.getLanguage());
-                dto.setLangLv(json); // 압축 완료!
-            }
-        } catch (JsonProcessingException e) {
-            throw new RuntimeException("JSON 변환 에러", e);
+            // 2. 파일 메타데이터 설정 (중요!)
+            ObjectMetadata metadata = new ObjectMetadata();
+            metadata.setContentType(image.getContentType());
+            metadata.setContentLength(image.getSize());
+
+            // 3. S3로 바로 업로드 (로컬 저장소 거치지 않음)
+            amazonS3.putObject(new PutObjectRequest(bucket, fileName, image.getInputStream(), metadata)
+                    .withCannedAcl(CannedAccessControlList.PublicRead));
+
+            // 4. S3 URL 추출 후 DTO에 저장
+            String fileUrl = amazonS3.getUrl(bucket, fileName).toString();
+            dto.setImage(fileUrl);
         }
 
-        // 4. 이제 DB에 저장 (dto 안에 암호화 비번과 JSON 문자열이 다 들어있음)
+        // 비밀번호 암호화 및 DB 저장
+        if(dto.getPw() != null) dto.setPw(passwordEncoder.encode(dto.getPw()));
         dao.insert(dto);
     }
 
     @Override
-    public memberDTO profileSelect(String id){
-        memberDTO dto = dao.profile(id);
+    public memberDTO profileSelect(String id) {
+        memberDTO dto = dao.profileSelect(id);
         if (dto != null && dto.getLangLv() != null) {
             try {
-                // langLv(글자)를 다시 List<LanguageDTO>로 풀어서 language에 넣기
                 List<LanguageDTO> list = objectMapper.readValue(
                         dto.getLangLv(),
                         new TypeReference<List<LanguageDTO>>() {}
                 );
-                dto.setLanguage(list); // 압축 해제 완료!
+                dto.setLanguage(list);
             } catch (JsonProcessingException e) {
                 e.printStackTrace();
             }
@@ -58,17 +76,11 @@ public class memberServiceImp implements memberService{
     }
 
     @Override
-    public memberDTO loginSelect(String id) {
-        return dao.loginSelect(id);
-    }
+    public memberDTO loginSelect(String id) { return dao.loginSelect(id); }
 
     @Override
     public memberDTO findById(String id) { return dao.findById(id); }
 
     @Override
-    public memberDTO findByNickName(String nickName) {
-        return dao.findByNickName(nickName);
-    }
-
-
+    public memberDTO findByNickName(String nickName) { return dao.findByNickName(nickName); }
 }

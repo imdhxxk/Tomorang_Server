@@ -6,19 +6,19 @@
         values (#{id},#{pw},#{role},#{email}, #{interest}, #{image}, #{nickName}, #{oneWord}, #{langLv})
     </insert>
 
-    <select id="profile" resultType="kr.hs.after.Tomorang.DTO.memberDTO">
+    <select id="profileSelect" resultType="kr.hs.after.Tomorang.DTO.memberDTO">
         select id, role, email, interest, image, nickName, oneWord, langLv from member where id = #{id}
     </select>
 
     <select id="loginSelect" resultType="kr.hs.after.Tomorang.DTO.memberDTO">
-        select * from member
+        select * from member where id = #{id}
     </select>
 
     <select id="findById" resultType="kr.hs.after.Tomorang.DTO.memberDTO">
-        SELECT * FROM member WHERE id = #{id}
+        SELECT id FROM member WHERE id = #{id}
     </select>
 
     <select id="findByNickName" resultType="kr.hs.after.Tomorang.DTO.memberDTO">
-        SELECT * FROM member WHERE nickName = #{nickName}
+        SELECT nickName FROM member WHERE nickName = #{nickName}
     </select>
 </mapper>

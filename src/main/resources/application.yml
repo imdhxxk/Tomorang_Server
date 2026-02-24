@@ -1,0 +1,26 @@
+spring:
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+# AWS S3 설정 (실제 값으로 채워주세요)
+cloud:
+  aws:
+    s3:
+      bucket: tomorang-storage
+    region:
+      static: ap-northeast-2 # 서울 리전
+    credentials:
+      access-key: ${AWS_ACCESS_KEY}
+      secret-key: ${AWS_SECRET_KEY}
+    stack:
+      auto: false
+
+# ⭐ Swagger 415 에러 방지 설정
+springdoc:
+  default-consumes-media-type: multipart/form-data
+  default-produces-media-type: application/json
+  swagger-ui:
+    operations-sorter: alpha
+    tags-sorter: alpha

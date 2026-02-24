@@ -2,6 +2,7 @@ package kr.hs.after.Tomorang.DAO;
 
 import kr.hs.after.Tomorang.DTO.memberDTO;
 import org.apache.ibatis.annotations.Mapper;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 

@@ -1,8 +1,12 @@
 package kr.hs.after.Tomorang.Controller;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
 import jakarta.servlet.http.HttpSession;
+import kr.hs.after.Tomorang.DTO.LanguageDTO;
 import kr.hs.after.Tomorang.DTO.memberDTO;
 import kr.hs.after.Tomorang.Service.memberService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,10 +15,10 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import io.swagger.v3.oas.annotations.parameters.RequestBody;
+import io.swagger.v3.oas.annotations.media.Encoding;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.UUID;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api")
@@ -26,89 +30,61 @@ public class memberController {
     @Autowired
     private memberService service;
 
-    @PostMapping("/signup")
-    public ResponseEntity<?> signup(@RequestBody memberDTO dto) {
 
-        // 1. 아이디 먼저 체크
-        if (service.findById(dto.getId()) != null) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("이미 사용 중인 아이디입니다.");
-        }
-
-        // 2. 닉네임 체크
-        if (service.findByNickName(dto.getNickName()) != null) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("이미 사용 중인 닉네임입니다.");
-        }
-
-        // 3. 둘 다 통과하면 가입!
-        service.insert(dto);
-        return ResponseEntity.ok("회원가입 완료");
-    }
-    @GetMapping("/login")
-    public ResponseEntity<?> signup(@RequestParam("id") String id,
-                                    @RequestParam("pw") String pw,
-                                    HttpSession session){
-        memberDTO dto = service.loginSelect(id);
-        if(dto==null){
-            System.out.println("실패");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body("아이디 또는 비밀번호가 일치하지 않습니다.");
-        }else{
-            if(dto.getPw().equals(pw)){
-                System.out.println("로그인 성공");
-                session.setAttribute("s_email",id);
-                return ResponseEntity.ok(dto.getNickName()+"반갑습니다.");
-            }else{
-                System.out.println("로그인 실패");
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                        .body("아이디 또는 비밀번호가 일치하지 않습니다.");
-            }
-        }
-
-
-    }
-    @Operation(summary = "회원 프로필 등록", description = "회원 기본 정보와 프로필 이미지를 업로드합니다.")
-    @PostMapping(
-            value = "/members/profile",
-            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
+    @Operation(summary = "회원가입 (파일 포함)")
+    @RequestBody(
+            content = @Content(
+                    mediaType = MediaType.MULTIPART_FORM_DATA_VALUE,
+                    encoding = @Encoding(name = "dto", contentType = "application/json")
+            )
     )
-    public ResponseEntity<?> createProfile(
+    @PostMapping(value = "/signup", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<String> signup(
+            @RequestParam String id,
+            @RequestParam String pw,
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) String interest,
+            @RequestParam(required = false) String nickName,
+            @RequestParam(required = false) String oneWord,
+            @RequestParam(required = false) String langLv,
+            @RequestParam(required = false) String language,  // JSON 문자열로 받기
+            @RequestPart(value = "image", required = false) MultipartFile image) {
 
-            @Parameter(description = "회원 정보 JSON")
-            @RequestPart("member") MemberProfileRequest request,
+        try {
+            memberDTO dto = new memberDTO();
+            dto.setId(id);
+            dto.setPw(pw);
+            dto.setRole(role);
+            dto.setEmail(email);
+            dto.setInterest(interest);
+            dto.setNickName(nickName);
+            dto.setOneWord(oneWord);
+            dto.setLangLv(langLv);
 
-            @Parameter(description = "프로필 이미지 파일")
-            @RequestPart("image") MultipartFile image
+            // language 파싱
+            if (language != null && !language.isEmpty()) {
+                ObjectMapper objectMapper = new ObjectMapper();
+                List<LanguageDTO> languageList = objectMapper.readValue(
+                        language, new TypeReference<List<LanguageDTO>>() {}
+                );
+                dto.setLanguage(languageList);
+            }
 
-    ) throws IOException {
+            service.insert(dto, image);
+            return ResponseEntity.ok("회원가입이 성공적으로 완료되었습니다.");
 
-        // 1️⃣ 업로드 폴더 생성 (없으면)
-        String uploadDir = "src/main/resources/static/uploads/";
-        File dir = new File(uploadDir);
-        if (!dir.exists()) {
-            dir.mkdirs();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("회원가입 중 서버 오류가 발생했습니다.");
         }
-
-        // 2️⃣ 파일명 생성
-        String fileName = UUID.randomUUID() + "_" + image.getOriginalFilename();
-        File saveFile = new File(uploadDir + fileName);
-
-        // 3️⃣ 파일 저장
-        image.transferTo(saveFile);
-
-        // 4️⃣ DB에 저장할 경로
-        String imagePath = "/uploads/" + fileName;
-
-        // 5️⃣ DB 매핑용 객체 생성 (MyBatis용)
-        Member member = new Member();
-        member.setUsername(request.getUsername());
-        member.setNickname(request.getNickname());
-        member.setProfileImage(imagePath);
-
-        // 6️⃣ MyBatis Mapper 호출
-        memberMapper.insertMember(member);
-
-        return ResponseEntity.ok(member);
     }
-
+    @GetMapping("/profileSelect")
+    public ResponseEntity<memberDTO> profileSelect(
+            @RequestParam String id
+    ) {
+        return ResponseEntity.ok(service.profileSelect(id));
+    }
 
 }
