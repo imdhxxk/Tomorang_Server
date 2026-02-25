@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.hs.after.Tomorang.DAO.chatMessageDAO">
+
+    <!-- Result Map -->
+    <resultMap id="chatMessageResultMap" type="kr.hs.after.Tomorang.model.chatMessage">
+        <id property="id" column="id"/>
+        <result property="roomId" column="room_id"/>
+        <result property="sender" column="sender"/>
+        <result property="recipient" column="recipient"/>
+        <result property="content" column="content"/>
+        <result property="timestamp" column="timestamp"/>
+        <result property="type" column="type"
+                typeHandler="org.apache.ibatis.type.EnumTypeHandler"/>
+    </resultMap>
+
+    <!-- 메시지 저장 -->
+    <insert id="insert" parameterType="kr.hs.after.Tomorang.model.chatMessage"
+            useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO chat_messages (room_id, sender, recipient, content, timestamp, type)
+        VALUES (#{roomId}, #{sender}, #{recipient}, #{content},
+        #{timestamp, jdbcType=TIMESTAMP}, #{type, typeHandler=org.apache.ibatis.type.EnumTypeHandler})
+    </insert>
+
+    <!-- 특정 채팅방의 모든 메시지 조회 (시간순 정렬) -->
+    <select id="findByRoomIdOrderByTimestampAsc" resultMap="chatMessageResultMap">
+        SELECT id, room_id, sender, recipient, content, timestamp, type
+        FROM chat_messages
+        WHERE room_id = #{roomId}
+        ORDER BY timestamp ASC
+    </select>
+
+    <!-- 두 사용자 간의 모든 메시지 조회 -->
+    <select id="findBySenderAndRecipientOrderByTimestampAsc" resultMap="chatMessageResultMap">
+        SELECT id, room_id, sender, recipient, content, timestamp, type
+        FROM chat_messages
+        WHERE (sender = #{sender} AND recipient = #{recipient})
+        OR (sender = #{recipient} AND recipient = #{sender})
+        ORDER BY timestamp ASC
+    </select>
+
+</mapper>
