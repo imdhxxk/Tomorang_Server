@@ -21,7 +21,7 @@ public class postController {
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<String> createPost(
-            // 텍스트 정보 (JSON 형태의 문자열로 받을 수도 있지만,
+            // 텍스트 정보 (JSON 형태의 문자열로 받을 수도 있지만,/
             // Swagger 호환성을 위해 @RequestPart로 지정)
             @RequestPart("data") postDTO dto,
             // 코스 상단 이미지들
