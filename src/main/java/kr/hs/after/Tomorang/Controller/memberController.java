@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
+import jakarta.servlet.http.HttpSession;
 import kr.hs.after.Tomorang.DTO.LanguageDTO;
 import kr.hs.after.Tomorang.DTO.memberDTO;
 import kr.hs.after.Tomorang.Service.memberService;
@@ -84,5 +85,25 @@ public class memberController {
     ) {
         return ResponseEntity.ok(service.profileSelect(id));
     }
-
+    @PostMapping("/login")
+    public ResponseEntity<?> signup(@RequestParam("id") String id,
+                                    @RequestParam("pw") String pw,
+                                    HttpSession session){
+        memberDTO dto = service.loginSelect(id);
+        if(dto==null){
+            System.out.println("실패");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("아이디 또는 비밀번호가 일치하지 않습니다.");
+        }else{
+            if(dto.getPw().equals(pw)){
+                System.out.println("로그인 성공");
+                session.setAttribute("s_email",id);
+                return ResponseEntity.ok(dto.getNickName()+"반갑습니다.");
+            }else{
+                System.out.println("로그인 실패");
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                        .body("아이디 또는 비밀번호가 일치하지 않습니다.");
+            }
+        }
+    }
 }

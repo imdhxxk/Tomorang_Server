@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kr.hs.after.Tomorang.DAO.post.postDAO">
+
+    <insert id="postInsert" useGeneratedKeys="true" keyProperty="post_id">
+        INSERT INTO posts (
+        user_id, title, subtitle, price, discount_rate, duration,
+        max_participants, rating, review_count, like_count,
+        city_name, country, lat, lng
+        )
+        VALUES (
+        #{user_id}, #{title}, #{subtitle}, #{price}, #{discount_rate}, #{duration},
+        #{max_participants}, #{rating}, #{review_count}, #{like_count},
+        #{city_name}, #{country}, #{lat}, #{lng}
+        )
+    </insert>
+
+    <insert id="insertPostImage">
+        INSERT INTO post_images (post_id, image_url)
+        VALUES (#{post_id}, #{url})
+    </insert>
+
+    <insert id="insertPostContent">
+        INSERT INTO post_contents (post_id, content_type, content_value, sequence)
+        VALUES (#{post_id}, #{content.type}, #{content.value}, #{content.sequence})
+    </insert>
+
+    <insert id="insertPostTag">
+        INSERT INTO post_tags (post_id, lang_code, tag_name)
+        VALUES (#{post_id}, #{tag.langCode}, #{tag.tagName})
+    </insert>
+
+    <insert id="insertPostSchedule" useGeneratedKeys="true" keyProperty="scheduleId">
+        INSERT INTO post_schedules (post_id, available_date)
+        VALUES (#{post_id}, #{date})
+    </insert>
+
+    <insert id="insertTimeSlot">
+        INSERT INTO time_slots (slot_id, schedule_id, available_time, status)
+        VALUES (#{slot.id}, #{scheduleId}, #{slot.time}, #{slot.status})
+    </insert>
+
+</mapper>
