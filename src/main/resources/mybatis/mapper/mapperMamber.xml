@@ -2,13 +2,9 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="kr.hs.after.Tomorang.DAO.memberDAO">
     <insert id="insert" parameterType="kr.hs.after.Tomorang.DTO.memberDTO">
-        insert into member(id, pw, role, email, interest, image, nickName, oneWord, langLv)
-        values (#{id},#{pw},#{role},#{email}, #{interest}, #{image}, #{nickName}, #{oneWord}, #{langLv})
+        insert into member(id, pw, role, email, interest, image, nickName, oneWord)
+        values (#{id},#{pw},#{role},#{email}, #{interest}, #{image}, #{nickName}, #{oneWord})
     </insert>
-
-    <select id="profileSelect" resultType="kr.hs.after.Tomorang.DTO.memberDTO">
-        select id, role, email, interest, image, nickName, oneWord, langLv from member where id = #{id}
-    </select>
 
     <select id="loginSelect" resultType="kr.hs.after.Tomorang.DTO.memberDTO">
         select * from member where id = #{id}
@@ -20,5 +16,25 @@
 
     <select id="findByNickName" resultType="kr.hs.after.Tomorang.DTO.memberDTO">
         SELECT nickName FROM member WHERE nickName = #{nickName}
+    </select>
+
+    <insert id="insertLanguage" parameterType="kr.hs.after.Tomorang.DTO.memberDTO">
+        INSERT INTO member_language(member_id, language, level)
+        VALUES(#{memberId}, #{language}, #{level})
+    </insert>
+
+    <delete id="deleteMember" parameterType="kr.hs.after.Tomorang.DTO.memberDTO">
+        DELETE FROM member_language WHERE member_id = #{memberId}
+    </delete>
+
+    <update id="updateMember">
+        
+    </update>
+
+    <select id="selectLanguages" resultType="kr.hs.after.Tomorang.DTO.memberDTO">
+        select * from mamber_language where id = #{id};
+    </select>
+    <select id="selectMember" resultType="kr.hs.after.Tomorang.DTO.memberDTO">
+        select id,role,email,interest, nickName, oneWord,image from member where id = #{id};
     </select>
 </mapper>

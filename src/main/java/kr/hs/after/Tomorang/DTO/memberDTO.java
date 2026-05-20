@@ -14,7 +14,6 @@ public class memberDTO {
     private String image;
     private String nickName;
     private String oneWord;
-    private String langLv;
-    private List<LanguageDTO> language;
+    private List<languageDTO> languages;
 }
 

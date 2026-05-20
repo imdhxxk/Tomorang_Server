@@ -1,4 +1,4 @@
-package kr.hs.after.Tomorang.jwtUtill;
+package kr.hs.after.Tomorang.jwt;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;

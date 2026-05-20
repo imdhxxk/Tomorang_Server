@@ -9,8 +9,12 @@ import java.util.List;
 @Mapper
 public interface memberDAO {
     public void insert(memberDTO dto);
-    public memberDTO profileSelect(String id);
+    public void insertLanguage(String memberId, String language, String level);
+    public void updateMember(String memberId);
+    public void deleteMember(String memberId);
     public memberDTO loginSelect(String id);
     public memberDTO findById(String id);
     public memberDTO findByNickName(String id);
+    public memberDTO selectMember(String id);
+    public memberDTO selectLanguages(String id);
 }

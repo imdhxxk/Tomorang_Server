@@ -8,7 +8,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import kr.hs.after.Tomorang.DAO.memberDAO;
-import kr.hs.after.Tomorang.DTO.LanguageDTO;
+import kr.hs.after.Tomorang.DTO.languageDTO;
 import kr.hs.after.Tomorang.DTO.memberDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value; // lombok.Value와 헷갈리지 마세요!
@@ -16,7 +16,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
@@ -35,43 +34,39 @@ public class memberServiceImp implements memberService {
 
     @Override
     public void insert(memberDTO dto, MultipartFile image) throws IOException {
-        if (image != null && !image.isEmpty()) {
-            // 1. 중복 방지 파일명 생성
-            String fileName = UUID.randomUUID() + "_" + image.getOriginalFilename();
 
-            // 2. 파일 메타데이터 설정 (중요!)
-            ObjectMetadata metadata = new ObjectMetadata();
-            metadata.setContentType(image.getContentType());
-            metadata.setContentLength(image.getSize());
-
-            // 3. S3로 바로 업로드 (로컬 저장소 거치지 않음)
-            amazonS3.putObject(new PutObjectRequest(bucket, fileName, image.getInputStream(), metadata)
-                    .withCannedAcl(CannedAccessControlList.PublicRead));
-
-            // 4. S3 URL 추출 후 DTO에 저장
-            String fileUrl = amazonS3.getUrl(bucket, fileName).toString();
-            dto.setImage(fileUrl);
+        // 1️⃣ 회원 저장
+        if(dto.getPw() != null) {
+            dto.setPw(passwordEncoder.encode(dto.getPw()));
         }
 
-        // 비밀번호 암호화 및 DB 저장
-        if(dto.getPw() != null) dto.setPw(passwordEncoder.encode(dto.getPw()));
         dao.insert(dto);
-    }
 
-    @Override
-    public memberDTO profileSelect(String id) {
-        memberDTO dto = dao.profileSelect(id);
-        if (dto != null && dto.getLangLv() != null) {
-            try {
-                List<LanguageDTO> list = objectMapper.readValue(
-                        dto.getLangLv(),
-                        new TypeReference<List<LanguageDTO>>() {}
+        // 2️⃣ 언어 저장
+        if (dto.getLanguages() != null && !dto.getLanguages().isEmpty()) {
+
+
+            for (languageDTO lang : dto.getLanguages()) {
+                dao.insertLanguage(
+                        dto.getId(),
+                        lang.getLanguage(),
+                        lang.getLevel()
                 );
-                dto.setLanguage(list);
-            } catch (JsonProcessingException e) {
-                e.printStackTrace();
             }
         }
+    }
+
+    public memberDTO profileSelect(String id) {
+
+        // 1️⃣ 회원 정보
+        memberDTO dto = dao.selectMember(id);
+
+        if (dto != null) {
+            // 2️⃣ 언어 리스트 조회
+            List<languageDTO> languages = dao.selectLanguages(id).getLanguages();
+            dto.setLanguages(languages);
+        }
+
         return dto;
     }
 
