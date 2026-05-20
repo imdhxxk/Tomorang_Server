@@ -19,14 +19,14 @@ public class postController {
 
     private final postService service;
 
+    /**
+     * 게시물 등록
+     * POST /api/post
+     */
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<String> createPost(
-            // 텍스트 정보 (JSON 형태의 문자열로 받을 수도 있지만,/
-            // Swagger 호환성을 위해 @RequestPart로 지정)
             @RequestPart("data") postDTO dto,
-            // 코스 상단 이미지들
             @RequestPart(value = "courseImages", required = false) List<MultipartFile> courseImages,
-            // 본문 블록에 들어갈 이미지들
             @RequestPart(value = "contentImages", required = false) List<MultipartFile> contentImages
     ) {
         try {
@@ -39,6 +39,31 @@ public class postController {
         }
     }
 
+    /**
+     * 게시물 목록 조회 (필터: city, country, userId)
+     * GET /api/post?city=서울&country=한국&userId=guide1
+     */
+    @GetMapping
+    public ResponseEntity<List<postDTO>> getPostList(
+            @RequestParam(required = false) String city,
+            @RequestParam(required = false) String country,
+            @RequestParam(required = false) String userId
+    ) {
+        List<postDTO> posts = service.getPostList(city, country, userId);
+        return ResponseEntity.ok(posts);
+    }
 
-
+    /**
+     * 게시물 상세 조회 (이미지, 본문, 태그, 일정 포함)
+     * GET /api/post/{id}
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getPostDetail(@PathVariable Long id) {
+        postDTO post = service.getPostDetail(id);
+        if (post == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("게시물을 찾을 수 없습니다.");
+        }
+        return ResponseEntity.ok(post);
+    }
 }

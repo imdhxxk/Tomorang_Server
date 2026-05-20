@@ -85,6 +85,33 @@ public class postServiceImp implements postService {
         }
     }
 
+    @Override
+    public List<postDTO> getPostList(String city, String country, String userId) {
+        List<postDTO> posts = dao.selectPosts(city, country, userId);
+        for (postDTO post : posts) {
+            post.setImages(dao.selectPostImages(post.getPost_id()));
+        }
+        return posts;
+    }
+
+    @Override
+    public postDTO getPostDetail(Long postId) {
+        postDTO post = dao.selectPostById(postId);
+        if (post == null) return null;
+
+        post.setImages(dao.selectPostImages(postId));
+        post.setContentBlocks(dao.selectPostContents(postId));
+        post.setTags(dao.selectPostTags(postId));
+
+        List<scheduleDTO> schedules = dao.selectSchedulesByPostId(postId);
+        for (scheduleDTO schedule : schedules) {
+            schedule.setTimeSlots(dao.selectTimeSlotsByScheduleId(schedule.getScheduleId()));
+        }
+        post.setSchedules(schedules);
+
+        return post;
+    }
+
     // S3 업로드 공통 메서드
     private String uploadToS3(MultipartFile file) throws IOException {
         String fileName = UUID.randomUUID() + "_" + file.getOriginalFilename();

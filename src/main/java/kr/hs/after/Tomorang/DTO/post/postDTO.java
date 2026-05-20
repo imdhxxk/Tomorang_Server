@@ -25,8 +25,13 @@ public class postDTO {
     private LocalDateTime createdAt; //게시글 생성 시간
     private LocalDateTime updatedAt; //수정시간
 
+    private List<String> images;
     private List<contentBlockDTO> contentBlocks;
     private List<tagDTO> tags;
     private List<scheduleDTO> schedules;
 
+    public int getDiscountedPrice() {
+        if (discount_rate <= 0) return price;
+        return (int) Math.round(price * (1 - discount_rate / 100.0));
+    }
 }

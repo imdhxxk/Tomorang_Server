@@ -14,12 +14,13 @@ import java.time.LocalDateTime;
 public class chatMessage {
 
     private Long id;
-    private String roomId;      // 채팅방 ID
-    private String sender;      // 발신자
-    private String recipient;   // 수신자
-    private String content;     // 메시지 내용
+    private String roomId;
+    private String sender;
+    private String recipient;
+    private String content;
     private LocalDateTime timestamp;
-    private MessageType type;   // 메시지 타입
+    private MessageType type;
+    private boolean isRead;
 
     public enum MessageType {
         CHAT,    // 일반 채팅 메시지

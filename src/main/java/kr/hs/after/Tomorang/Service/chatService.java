@@ -1,8 +1,11 @@
 package kr.hs.after.Tomorang.Service;
 
+import kr.hs.after.Tomorang.DAO.chatRoomDAO;
 import kr.hs.after.Tomorang.model.chatMessage;
+import kr.hs.after.Tomorang.model.chatRoom;
 import kr.hs.after.Tomorang.DAO.chatMessageDAO;
 import kr.hs.after.Tomorang.DTO.chatMessageDTO;
+import kr.hs.after.Tomorang.DTO.chatRoomSummaryDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,6 +21,7 @@ import java.util.stream.Collectors;
 public class chatService {
 
     private final chatMessageDAO chatMessageMapper;
+    private final chatRoomDAO chatRoomMapper;
 
     /**
      * 메시지 저장
@@ -58,5 +62,34 @@ public class chatService {
         return messages.stream()
                 .map(chatMessageDTO::fromEntity)
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 내가 참여한 채팅방 목록 (마지막 메시지 + 안읽은 수 포함)
+     */
+    @Transactional(readOnly = true)
+    public List<chatRoomSummaryDTO> getRoomSummaries(String userId) {
+        List<chatRoom> rooms = chatRoomMapper.findRoomsByUser(userId);
+        return rooms.stream().map(room -> {
+            String otherUser = room.getUser1().equals(userId) ? room.getUser2() : room.getUser1();
+            chatMessage last = chatMessageMapper.findLastMessageByRoomId(room.getRoomId());
+            int unread = chatMessageMapper.countUnread(room.getRoomId(), userId);
+
+            return chatRoomSummaryDTO.builder()
+                    .roomId(room.getRoomId())
+                    .otherUser(otherUser)
+                    .lastMessage(last != null ? last.getContent() : null)
+                    .lastMessageTime(last != null ? last.getTimestamp() : room.getCreatedAt())
+                    .unreadCount(unread)
+                    .build();
+        }).collect(Collectors.toList());
+    }
+
+    /**
+     * 채팅방 입장 시 읽음 처리
+     */
+    @Transactional
+    public void markAsRead(String roomId, String userId) {
+        chatMessageMapper.markAsRead(roomId, userId);
     }
 }

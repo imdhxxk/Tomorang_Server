@@ -35,4 +35,16 @@
         LIMIT 1
     </select>
 
+    <!-- 내가 참여한 채팅방 전체 (최신 메시지 기준 정렬) -->
+    <select id="findRoomsByUser" resultMap="chatRoomResultMap">
+        SELECT cr.id, cr.room_id, cr.user1, cr.user2, cr.created_at
+        FROM chat_rooms cr
+        WHERE cr.user1 = #{userId} OR cr.user2 = #{userId}
+        ORDER BY (
+            SELECT MAX(cm.timestamp)
+            FROM chat_messages cm
+            WHERE cm.room_id = cr.room_id
+        ) DESC
+    </select>
+
 </mapper>

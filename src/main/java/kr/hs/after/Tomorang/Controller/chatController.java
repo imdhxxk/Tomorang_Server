@@ -1,6 +1,7 @@
 package kr.hs.after.Tomorang.Controller;
 
 import kr.hs.after.Tomorang.DTO.chatMessageDTO;
+import kr.hs.after.Tomorang.DTO.chatRoomSummaryDTO;
 import kr.hs.after.Tomorang.model.chatRoom;
 import kr.hs.after.Tomorang.Service.chatRoomService;
 import lombok.RequiredArgsConstructor;
@@ -11,7 +12,6 @@ import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.web.bind.annotation.*;
-
 
 import java.util.HashMap;
 import java.util.List;
@@ -27,24 +27,34 @@ public class chatController {
     private final chatRoomService chatRoomService;
 
     /**
-     * WebSocket을 통해 메시지 수신 및 전달
-     * 클라이언트가 /app/chat으로 메시지를 보내면 이 메서드가 처리
+     * WebSocket: 메시지 전송
+     * 클라이언트 → /app/chat
      */
     @MessageMapping("/chat")
     public void processMessage(@Payload chatMessageDTO chatMessage) {
-        log.info("Received message: {}", chatMessage);
-
-        // 메시지 DB에 저장
         chatMessageDTO savedMessage = chatService.saveMessage(chatMessage);
 
-        // 수신자에게 메시지 전송 (개인 메시지)
+        // 수신자에게 전달
         messagingTemplate.convertAndSendToUser(
                 chatMessage.getRecipient(),
                 "/queue/messages",
                 savedMessage
         );
 
-        log.info("Message sent to user: {}", chatMessage.getRecipient());
+        // 발신자에게도 전달 (내 화면에서 전송 확인)
+        messagingTemplate.convertAndSendToUser(
+                chatMessage.getSender(),
+                "/queue/messages",
+                savedMessage
+        );
+
+        // 채팅방 구독자 전체에게 브로드캐스트 (방 기반 UI 지원)
+        if (chatMessage.getRoomId() != null) {
+            messagingTemplate.convertAndSend(
+                    "/topic/room/" + chatMessage.getRoomId(),
+                    savedMessage
+            );
+        }
     }
 
     /**
@@ -87,6 +97,27 @@ public class chatController {
 
         List<chatMessageDTO> messages = chatService.getChatHistoryBetweenUsers(user1, user2);
         return ResponseEntity.ok(messages);
+    }
+
+    /**
+     * REST API: 내 채팅방 목록 (마지막 메시지 + 안읽은 수 포함)
+     * GET /api/chat/rooms?userId=
+     */
+    @GetMapping("/api/chat/rooms")
+    public ResponseEntity<List<chatRoomSummaryDTO>> getChatRooms(@RequestParam String userId) {
+        return ResponseEntity.ok(chatService.getRoomSummaries(userId));
+    }
+
+    /**
+     * REST API: 채팅방 입장 — 읽음 처리
+     * PATCH /api/chat/room/{roomId}/read?userId=
+     */
+    @PatchMapping("/api/chat/room/{roomId}/read")
+    public ResponseEntity<Void> markAsRead(
+            @PathVariable String roomId,
+            @RequestParam String userId) {
+        chatService.markAsRead(roomId, userId);
+        return ResponseEntity.ok().build();
     }
 
     /**

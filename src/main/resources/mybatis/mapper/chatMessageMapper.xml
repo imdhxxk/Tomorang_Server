@@ -13,19 +13,20 @@
         <result property="timestamp" column="timestamp"/>
         <result property="type" column="type"
                 typeHandler="org.apache.ibatis.type.EnumTypeHandler"/>
+        <result property="isRead" column="is_read"/>
     </resultMap>
 
     <!-- 메시지 저장 -->
     <insert id="insert" parameterType="kr.hs.after.Tomorang.model.chatMessage"
             useGeneratedKeys="true" keyProperty="id">
-        INSERT INTO chat_messages (room_id, sender, recipient, content, timestamp, type)
+        INSERT INTO chat_messages (room_id, sender, recipient, content, timestamp, type, is_read)
         VALUES (#{roomId}, #{sender}, #{recipient}, #{content},
-        #{timestamp, jdbcType=TIMESTAMP}, #{type, typeHandler=org.apache.ibatis.type.EnumTypeHandler})
+        #{timestamp, jdbcType=TIMESTAMP}, #{type, typeHandler=org.apache.ibatis.type.EnumTypeHandler}, FALSE)
     </insert>
 
     <!-- 특정 채팅방의 모든 메시지 조회 (시간순 정렬) -->
     <select id="findByRoomIdOrderByTimestampAsc" resultMap="chatMessageResultMap">
-        SELECT id, room_id, sender, recipient, content, timestamp, type
+        SELECT id, room_id, sender, recipient, content, timestamp, type, is_read
         FROM chat_messages
         WHERE room_id = #{roomId}
         ORDER BY timestamp ASC
@@ -33,11 +34,38 @@
 
     <!-- 두 사용자 간의 모든 메시지 조회 -->
     <select id="findBySenderAndRecipientOrderByTimestampAsc" resultMap="chatMessageResultMap">
-        SELECT id, room_id, sender, recipient, content, timestamp, type
+        SELECT id, room_id, sender, recipient, content, timestamp, type, is_read
         FROM chat_messages
         WHERE (sender = #{sender} AND recipient = #{recipient})
         OR (sender = #{recipient} AND recipient = #{sender})
         ORDER BY timestamp ASC
     </select>
+
+    <!-- 채팅방의 마지막 메시지 -->
+    <select id="findLastMessageByRoomId" resultMap="chatMessageResultMap">
+        SELECT id, room_id, sender, recipient, content, timestamp, type, is_read
+        FROM chat_messages
+        WHERE room_id = #{roomId}
+        ORDER BY timestamp DESC
+        LIMIT 1
+    </select>
+
+    <!-- 안 읽은 메시지 수 (내가 수신자이고 아직 안 읽은 것) -->
+    <select id="countUnread" resultType="int">
+        SELECT COUNT(*)
+        FROM chat_messages
+        WHERE room_id = #{roomId}
+          AND recipient = #{userId}
+          AND is_read = FALSE
+    </select>
+
+    <!-- 읽음 처리 (내가 수신자인 메시지 전부) -->
+    <update id="markAsRead">
+        UPDATE chat_messages
+        SET is_read = TRUE
+        WHERE room_id = #{roomId}
+          AND recipient = #{userId}
+          AND is_read = FALSE
+    </update>
 
 </mapper>

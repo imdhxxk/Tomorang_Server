@@ -20,8 +20,8 @@ public class chatMessageDTO {
     private String content;
     private LocalDateTime timestamp;
     private chatMessage.MessageType type;
+    private boolean isRead;
 
-    // Entity를 DTO로 변환
     public static chatMessageDTO fromEntity(chatMessage message) {
         return chatMessageDTO.builder()
                 .roomId(message.getRoomId())
@@ -30,10 +30,10 @@ public class chatMessageDTO {
                 .content(message.getContent())
                 .timestamp(message.getTimestamp())
                 .type(message.getType())
+                .isRead(message.isRead())
                 .build();
     }
 
-    // DTO를 Entity로 변환
     public chatMessage toEntity() {
         return chatMessage.builder()
                 .roomId(this.roomId)
@@ -42,6 +42,7 @@ public class chatMessageDTO {
                 .content(this.content)
                 .timestamp(this.timestamp != null ? this.timestamp : LocalDateTime.now())
                 .type(this.type)
+                .isRead(false)
                 .build();
     }
 }

@@ -41,4 +41,69 @@
         VALUES (#{slot.id}, #{scheduleId}, #{slot.time}, #{slot.status})
     </insert>
 
+    <!-- 게시물 목록 조회 (필터: 도시, 나라, 가이드 ID) -->
+    <select id="selectPosts" resultType="kr.hs.after.Tomorang.DTO.post.postDTO">
+        SELECT post_id, user_id, title, subtitle, price, discount_rate, duration,
+               max_participants, rating, review_count, like_count,
+               city_name, country, lat, lng, created_at AS createdAt, updated_at AS updatedAt
+        FROM posts
+        <where>
+            <if test="city != null and city != ''">
+                AND city_name = #{city}
+            </if>
+            <if test="country != null and country != ''">
+                AND country = #{country}
+            </if>
+            <if test="userId != null and userId != ''">
+                AND user_id = #{userId}
+            </if>
+        </where>
+        ORDER BY post_id DESC
+    </select>
+
+    <!-- 게시물 단건 조회 -->
+    <select id="selectPostById" resultType="kr.hs.after.Tomorang.DTO.post.postDTO">
+        SELECT post_id, user_id, title, subtitle, price, discount_rate, duration,
+               max_participants, rating, review_count, like_count,
+               city_name, country, lat, lng, created_at AS createdAt, updated_at AS updatedAt
+        FROM posts
+        WHERE post_id = #{postId}
+    </select>
+
+    <!-- 코스 이미지 목록 -->
+    <select id="selectPostImages" resultType="String">
+        SELECT image_url FROM post_images WHERE post_id = #{postId} ORDER BY id ASC
+    </select>
+
+    <!-- 본문 콘텐츠 블록 -->
+    <select id="selectPostContents" resultType="kr.hs.after.Tomorang.DTO.post.contentBlockDTO">
+        SELECT content_type AS type, content_value AS value, sequence
+        FROM post_contents
+        WHERE post_id = #{postId}
+        ORDER BY sequence ASC
+    </select>
+
+    <!-- 다국어 태그 -->
+    <select id="selectPostTags" resultType="kr.hs.after.Tomorang.DTO.post.tagDTO">
+        SELECT lang_code AS langCode, tag_name AS tagName
+        FROM post_tags
+        WHERE post_id = #{postId}
+    </select>
+
+    <!-- 일정 목록 -->
+    <select id="selectSchedulesByPostId" resultType="kr.hs.after.Tomorang.DTO.post.scheduleDTO">
+        SELECT schedule_id AS scheduleId, available_date AS date
+        FROM post_schedules
+        WHERE post_id = #{postId}
+        ORDER BY available_date ASC
+    </select>
+
+    <!-- 타임슬롯 목록 -->
+    <select id="selectTimeSlotsByScheduleId" resultType="kr.hs.after.Tomorang.DTO.post.timeSlotDTO">
+        SELECT slot_id AS id, available_time AS time, status
+        FROM time_slots
+        WHERE schedule_id = #{scheduleId}
+        ORDER BY available_time ASC
+    </select>
+
 </mapper>
