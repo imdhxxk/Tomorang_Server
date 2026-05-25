@@ -37,28 +37,37 @@
     </insert>
 
     <insert id="insertTimeSlot">
-        INSERT INTO time_slots (slot_id, schedule_id, available_time, status)
-        VALUES (#{slot.id}, #{scheduleId}, #{slot.time}, #{slot.status})
+        INSERT INTO time_slots (slot_id, schedule_id, available_time, status, max_capacity, booked_count)
+        VALUES (#{slot.id}, #{scheduleId}, #{slot.time}, #{slot.status},
+                IF(#{slot.maxCapacity} > 0, #{slot.maxCapacity}, 10), 0)
     </insert>
 
-    <!-- 게시물 목록 조회 (필터: 도시, 나라, 가이드 ID) -->
+    <!-- 통합 검색 (키워드·도시·국가·가이드ID 모두 선택 파라미터) -->
     <select id="selectPosts" resultType="kr.hs.after.Tomorang.DTO.post.postDTO">
-        SELECT post_id, user_id, title, subtitle, price, discount_rate, duration,
-               max_participants, rating, review_count, like_count,
-               city_name, country, lat, lng, created_at AS createdAt, updated_at AS updatedAt
-        FROM posts
+        SELECT DISTINCT
+               p.post_id, p.user_id, p.title, p.subtitle, p.price, p.discount_rate,
+               p.duration, p.max_participants, p.rating, p.review_count, p.like_count,
+               p.city_name, p.country, p.lat, p.lng,
+               p.created_at AS createdAt, p.updated_at AS updatedAt
+        FROM   posts p
+               LEFT JOIN post_tags t ON p.post_id = t.post_id
         <where>
+            <if test="keyword != null and keyword != ''">
+                AND (p.title    LIKE CONCAT('%', #{keyword}, '%')
+                  OR p.subtitle LIKE CONCAT('%', #{keyword}, '%')
+                  OR t.tag_name LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
             <if test="city != null and city != ''">
-                AND city_name = #{city}
+                AND p.city_name = #{city}
             </if>
             <if test="country != null and country != ''">
-                AND country = #{country}
+                AND p.country = #{country}
             </if>
             <if test="userId != null and userId != ''">
-                AND user_id = #{userId}
+                AND p.user_id = #{userId}
             </if>
         </where>
-        ORDER BY post_id DESC
+        ORDER BY p.post_id DESC
     </select>
 
     <!-- 게시물 단건 조회 -->
@@ -72,7 +81,7 @@
 
     <!-- 코스 이미지 목록 -->
     <select id="selectPostImages" resultType="String">
-        SELECT image_url FROM post_images WHERE post_id = #{postId} ORDER BY id ASC
+        SELECT image_url FROM post_images WHERE post_id = #{postId} ORDER BY image_id ASC
     </select>
 
     <!-- 본문 콘텐츠 블록 -->
@@ -100,7 +109,11 @@
 
     <!-- 타임슬롯 목록 -->
     <select id="selectTimeSlotsByScheduleId" resultType="kr.hs.after.Tomorang.DTO.post.timeSlotDTO">
-        SELECT slot_id AS id, available_time AS time, status
+        SELECT slot_id       AS id,
+               available_time AS time,
+               status,
+               max_capacity   AS maxCapacity,
+               booked_count   AS bookedCount
         FROM time_slots
         WHERE schedule_id = #{scheduleId}
         ORDER BY available_time ASC

@@ -20,10 +20,11 @@ public interface postDAO {
     void insertPostSchedule(Map<String, Object> map);
     void insertTimeSlot(@Param("scheduleId") Long scheduleId, @Param("slot") timeSlotDTO slot);
 
-    // 조회
-    List<postDTO> selectPosts(@Param("city") String city,
+    // 통합 조회·검색 (모든 파라미터 선택)
+    List<postDTO> selectPosts(@Param("keyword") String keyword,
+                              @Param("city")    String city,
                               @Param("country") String country,
-                              @Param("userId") String userId);
+                              @Param("userId")  String userId);
     postDTO selectPostById(@Param("postId") Long postId);
     List<String> selectPostImages(@Param("postId") Long postId);
     List<contentBlockDTO> selectPostContents(@Param("postId") Long postId);

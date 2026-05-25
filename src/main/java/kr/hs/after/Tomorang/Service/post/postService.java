@@ -11,7 +11,7 @@ public interface postService {
                     List<MultipartFile> courseImages,
                     List<MultipartFile> contentImages) throws IOException;
 
-    List<postDTO> getPostList(String city, String country, String userId);
+    List<postDTO> getPostList(String keyword, String city, String country, String userId);
 
     postDTO getPostDetail(Long postId);
 }

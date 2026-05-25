@@ -20,7 +20,7 @@ public class chatMessageDTO {
     private String content;
     private LocalDateTime timestamp;
     private chatMessage.MessageType type;
-    private boolean isRead;
+    private Boolean isRead;
 
     public static chatMessageDTO fromEntity(chatMessage message) {
         return chatMessageDTO.builder()
@@ -30,7 +30,7 @@ public class chatMessageDTO {
                 .content(message.getContent())
                 .timestamp(message.getTimestamp())
                 .type(message.getType())
-                .isRead(message.isRead())
+                .isRead(message.getIsRead())
                 .build();
     }
 
@@ -42,7 +42,7 @@ public class chatMessageDTO {
                 .content(this.content)
                 .timestamp(this.timestamp != null ? this.timestamp : LocalDateTime.now())
                 .type(this.type)
-                .isRead(false)
+                .isRead(Boolean.FALSE)
                 .build();
     }
 }

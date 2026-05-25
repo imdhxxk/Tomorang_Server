@@ -20,7 +20,7 @@ public class chatMessage {
     private String content;
     private LocalDateTime timestamp;
     private MessageType type;
-    private boolean isRead;
+    private Boolean isRead;
 
     public enum MessageType {
         CHAT,    // 일반 채팅 메시지

@@ -1,40 +1,132 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="kr.hs.after.Tomorang.DAO.memberDAO">
+
+    <!-- ===================== Result Maps ===================== -->
+
+    <!-- 회원 resultMap: DB 컬럼명 → Java 필드 명시적 매핑 -->
+    <resultMap id="memberResultMap" type="kr.hs.after.Tomorang.DTO.memberDTO">
+        <id     property="id"       column="id"/>
+        <result property="pw"       column="pw"/>
+        <result property="role"     column="role"/>
+        <result property="email"    column="email"/>
+        <result property="interest" column="interest"/>
+        <result property="image"    column="image"/>
+        <result property="nickName" column="nickName"/>
+        <result property="oneWord"  column="oneWord"/>
+    </resultMap>
+
+    <!-- 언어 resultMap: LanguageType enum + int level -->
+    <resultMap id="languageResultMap" type="kr.hs.after.Tomorang.DTO.languageDTO">
+        <result property="language" column="language"
+                typeHandler="org.apache.ibatis.type.EnumTypeHandler"/>
+        <result property="level"    column="level"/>
+    </resultMap>
+
+    <!-- ===================== INSERT ===================== -->
+
+    <!-- 회원가입 -->
     <insert id="insert" parameterType="kr.hs.after.Tomorang.DTO.memberDTO">
-        insert into member(id, pw, role, email, interest, image, nickName, oneWord)
-        values (#{id},#{pw},#{role},#{email}, #{interest}, #{image}, #{nickName}, #{oneWord})
+        INSERT INTO member(id, pw, role, email, interest, image, nickName, oneWord)
+        VALUES (#{id}, #{pw}, #{role}, #{email}, #{interest}, #{image}, #{nickName}, #{oneWord})
     </insert>
 
-    <select id="loginSelect" resultType="kr.hs.after.Tomorang.DTO.memberDTO">
-        select * from member where id = #{id}
-    </select>
-
-    <select id="findById" resultType="kr.hs.after.Tomorang.DTO.memberDTO">
-        SELECT id FROM member WHERE id = #{id}
-    </select>
-
-    <select id="findByNickName" resultType="kr.hs.after.Tomorang.DTO.memberDTO">
-        SELECT nickName FROM member WHERE nickName = #{nickName}
-    </select>
-
-    <insert id="insertLanguage" parameterType="kr.hs.after.Tomorang.DTO.memberDTO">
+    <!-- 언어 추가 (KOREAN/ENGLISH/JAPANESE + 레벨 1~3) -->
+    <insert id="insertLanguage">
         INSERT INTO member_language(member_id, language, level)
-        VALUES(#{memberId}, #{language}, #{level})
+        VALUES (
+            #{memberId},
+            #{language, typeHandler=org.apache.ibatis.type.EnumTypeHandler},
+            #{level}
+        )
     </insert>
 
-    <delete id="deleteMember" parameterType="kr.hs.after.Tomorang.DTO.memberDTO">
+    <!-- ===================== UPDATE ===================== -->
+
+    <!-- 회원 정보 수정 (null인 필드는 건너뜀) -->
+    <update id="updateMember" parameterType="kr.hs.after.Tomorang.DTO.memberDTO">
+        UPDATE member
+        <set>
+            <if test="email    != null">email    = #{email},</if>
+            <if test="interest != null">interest = #{interest},</if>
+            <if test="image    != null">image    = #{image},</if>
+            <if test="nickName != null">nickName = #{nickName},</if>
+            <if test="oneWord  != null">oneWord  = #{oneWord},</if>
+            <if test="pw       != null">pw       = #{pw},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 역할 전환 -->
+    <update id="updateRole">
+        UPDATE member SET role = #{role} WHERE id = #{memberId}
+    </update>
+
+    <!-- ===================== DELETE ===================== -->
+
+    <!-- 언어 전체 삭제 (수정/탈퇴 시 먼저 호출) -->
+    <delete id="deleteLanguages">
         DELETE FROM member_language WHERE member_id = #{memberId}
     </delete>
 
-    <update id="updateMember">
-        
-    </update>
+    <!-- 회원 탈퇴 -->
+    <delete id="deleteMember">
+        DELETE FROM member WHERE id = #{memberId}
+    </delete>
 
-    <select id="selectLanguages" resultType="kr.hs.after.Tomorang.DTO.memberDTO">
-        select * from mamber_language where id = #{id};
+    <!-- ===================== SELECT ===================== -->
+
+    <!-- 로그인 -->
+    <select id="loginSelect" resultMap="memberResultMap">
+        SELECT id, pw, role, email, interest, nickName, oneWord, image
+        FROM member
+        WHERE id = #{id}
     </select>
-    <select id="selectMember" resultType="kr.hs.after.Tomorang.DTO.memberDTO">
-        select id,role,email,interest, nickName, oneWord,image from member where id = #{id};
+
+    <!-- ID 중복 확인 -->
+    <select id="findById" resultMap="memberResultMap">
+        SELECT id FROM member WHERE id = #{id}
     </select>
+
+    <!-- 닉네임 중복 확인 -->
+    <select id="findByNickName" resultMap="memberResultMap">
+        SELECT nickName FROM member WHERE nickName = #{nickName}
+    </select>
+
+    <!-- 프로필 조회 -->
+    <select id="selectMember" resultMap="memberResultMap">
+        SELECT id, role, email, interest, nickName, oneWord, image
+        FROM member
+        WHERE id = #{id}
+    </select>
+
+    <!-- 언어 목록 조회 (등록 순서 유지) -->
+    <select id="selectLanguages" resultMap="languageResultMap">
+        SELECT language, level
+        FROM member_language
+        WHERE member_id = #{memberId}
+        ORDER BY id ASC
+    </select>
+
+    <!-- 역할 단건 조회 -->
+    <select id="selectRole" resultType="String">
+        SELECT role FROM member WHERE id = #{memberId}
+    </select>
+
+    <!-- 인기 안내자 목록 (평균 평점 + 좋아요 합산 내림차순) -->
+    <select id="selectPopularGuides" resultType="kr.hs.after.Tomorang.DTO.guideProfileDTO">
+        SELECT m.id,
+               m.nickName,
+               m.image,
+               m.oneWord,
+               COALESCE(AVG(p.rating),    0) AS avgRating,
+               COALESCE(SUM(p.like_count),0) AS totalLikes,
+               COUNT(p.post_id)              AS postCount
+        FROM   member m
+               LEFT JOIN posts p ON m.id = p.user_id
+        WHERE  m.role = 'GUIDE'
+        GROUP  BY m.id, m.nickName, m.image, m.oneWord
+        ORDER  BY avgRating DESC, totalLikes DESC
+    </select>
+
 </mapper>

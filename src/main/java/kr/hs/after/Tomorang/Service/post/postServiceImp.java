@@ -86,8 +86,9 @@ public class postServiceImp implements postService {
     }
 
     @Override
-    public List<postDTO> getPostList(String city, String country, String userId) {
-        List<postDTO> posts = dao.selectPosts(city, country, userId);
+    public List<postDTO> getPostList(String keyword, String city, String country, String userId) {
+        String kw = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
+        List<postDTO> posts = dao.selectPosts(kw, city, country, userId);
         for (postDTO post : posts) {
             post.setImages(dao.selectPostImages(post.getPost_id()));
         }

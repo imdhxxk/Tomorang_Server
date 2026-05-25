@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.hs.after.Tomorang.DAO.wishlistDAO">
+
+    <!-- 찜 추가 (이미 있으면 무시) -->
+    <insert id="insertWishlist">
+        INSERT IGNORE INTO wishlists (member_id, post_id)
+        VALUES (#{memberId}, #{postId})
+    </insert>
+
+    <!-- 찜 취소 -->
+    <delete id="deleteWishlist">
+        DELETE FROM wishlists
+        WHERE member_id = #{memberId} AND post_id = #{postId}
+    </delete>
+
+    <!-- 찜 여부 확인 -->
+    <select id="existsWishlist" resultType="boolean">
+        SELECT COUNT(*) > 0
+        FROM wishlists
+        WHERE member_id = #{memberId} AND post_id = #{postId}
+    </select>
+
+    <!-- 찜한 게시물 목록 -->
+    <select id="selectWishlists" resultType="kr.hs.after.Tomorang.DTO.post.postDTO">
+        SELECT p.post_id, p.user_id, p.title, p.subtitle,
+               p.price, p.discount_rate, p.duration,
+               p.max_participants, p.rating, p.review_count, p.like_count,
+               p.city_name, p.country, p.lat, p.lng,
+               p.created_at AS createdAt
+        FROM   wishlists w
+               JOIN posts p ON w.post_id = p.post_id
+        WHERE  w.member_id = #{memberId}
+        ORDER  BY w.created_at DESC
+    </select>
+
+</mapper>

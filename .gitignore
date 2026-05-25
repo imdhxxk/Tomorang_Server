@@ -37,4 +37,11 @@ out/
 .vscode/
 
 ### Secrets ###
-src/main/resources/application.yml
+src/main/resources/application.properties
+
+### Claude Code ###
+.claude/
+
+### Test HTML ###
+chat-test.html
+src/main/resources/static/chat-test.html
