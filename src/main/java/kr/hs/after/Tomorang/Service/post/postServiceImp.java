@@ -91,6 +91,7 @@ public class postServiceImp implements postService {
         List<postDTO> posts = dao.selectPosts(kw, city, country, userId);
         for (postDTO post : posts) {
             post.setImages(dao.selectPostImages(post.getPost_id()));
+            post.setContentBlocks(dao.selectPostContents(post.getPost_id()));
         }
         return posts;
     }

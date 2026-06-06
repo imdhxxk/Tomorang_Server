@@ -3,6 +3,29 @@
 
 <mapper namespace="kr.hs.after.Tomorang.DAO.post.postDAO">
 
+    <!-- ===================== Result Map =====================
+         map-underscore-to-camel-case=true 가 켜져 있어 snake_case 컬럼이
+         snake_case DTO 필드(post_id 등)에 자동 매핑되지 않으므로 명시적으로 매핑함 -->
+    <resultMap id="postResultMap" type="kr.hs.after.Tomorang.DTO.post.postDTO">
+        <id     column="post_id"          property="post_id"/>
+        <result column="user_id"          property="user_id"/>
+        <result column="title"            property="title"/>
+        <result column="subtitle"         property="subtitle"/>
+        <result column="price"            property="price"/>
+        <result column="discount_rate"    property="discount_rate"/>
+        <result column="duration"         property="duration"/>
+        <result column="max_participants" property="max_participants"/>
+        <result column="rating"           property="rating"/>
+        <result column="review_count"     property="review_count"/>
+        <result column="like_count"       property="like_count"/>
+        <result column="city_name"        property="city_name"/>
+        <result column="country"          property="country"/>
+        <result column="lat"              property="lat"/>
+        <result column="lng"              property="lng"/>
+        <result column="created_at"       property="createdAt"/>
+        <result column="updated_at"       property="updatedAt"/>
+    </resultMap>
+
     <insert id="postInsert" useGeneratedKeys="true" keyProperty="post_id">
         INSERT INTO posts (
         user_id, title, subtitle, price, discount_rate, duration,
@@ -43,12 +66,12 @@
     </insert>
 
     <!-- 통합 검색 (키워드·도시·국가·가이드ID 모두 선택 파라미터) -->
-    <select id="selectPosts" resultType="kr.hs.after.Tomorang.DTO.post.postDTO">
+    <select id="selectPosts" resultMap="postResultMap">
         SELECT DISTINCT
                p.post_id, p.user_id, p.title, p.subtitle, p.price, p.discount_rate,
                p.duration, p.max_participants, p.rating, p.review_count, p.like_count,
                p.city_name, p.country, p.lat, p.lng,
-               p.created_at AS createdAt, p.updated_at AS updatedAt
+               p.created_at, p.updated_at
         FROM   posts p
                LEFT JOIN post_tags t ON p.post_id = t.post_id
         <where>
@@ -71,10 +94,10 @@
     </select>
 
     <!-- 게시물 단건 조회 -->
-    <select id="selectPostById" resultType="kr.hs.after.Tomorang.DTO.post.postDTO">
+    <select id="selectPostById" resultMap="postResultMap">
         SELECT post_id, user_id, title, subtitle, price, discount_rate, duration,
                max_participants, rating, review_count, like_count,
-               city_name, country, lat, lng, created_at AS createdAt, updated_at AS updatedAt
+               city_name, country, lat, lng, created_at, updated_at
         FROM posts
         WHERE post_id = #{postId}
     </select>
