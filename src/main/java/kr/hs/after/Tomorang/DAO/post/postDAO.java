@@ -20,12 +20,24 @@ public interface postDAO {
     void insertPostSchedule(Map<String, Object> map);
     void insertTimeSlot(@Param("scheduleId") Long scheduleId, @Param("slot") timeSlotDTO slot);
 
-    // 통합 조회·검색 (모든 파라미터 선택)
-    List<postDTO> selectPosts(@Param("keyword") String keyword,
-                              @Param("city")    String city,
-                              @Param("country") String country,
-                              @Param("userId")  String userId);
+    // 통합 조회·검색 (모든 파라미터 선택). viewerId가 있으면 그 사용자가 숨긴 작성자의 글을 제외
+    List<postDTO> selectPosts(@Param("keyword")  String keyword,
+                              @Param("city")     String city,
+                              @Param("country")  String country,
+                              @Param("userId")   String userId,
+                              @Param("viewerId") String viewerId);
     postDTO selectPostById(@Param("postId") Long postId);
+
+    // 게시물 수정 (스칼라 필드)
+    void updatePost(postDTO dto);
+
+    // 게시물 삭제 (FK 자식 정리 → posts 삭제 시 images/contents/tags/schedules는 CASCADE)
+    void deleteReviewLikesByPost(@Param("postId") Long postId);
+    void deleteReviewImagesByPost(@Param("postId") Long postId);
+    void deleteReviewsByPost(@Param("postId") Long postId);
+    void deleteReservationsByPost(@Param("postId") Long postId);
+    void deleteWishlistsByPost(@Param("postId") Long postId);
+    void deletePostById(@Param("postId") Long postId);
     List<String> selectPostImages(@Param("postId") Long postId);
     List<contentBlockDTO> selectPostContents(@Param("postId") Long postId);
     List<tagDTO> selectPostTags(@Param("postId") Long postId);

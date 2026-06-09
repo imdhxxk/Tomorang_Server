@@ -89,6 +89,13 @@
             <if test="userId != null and userId != ''">
                 AND p.user_id = #{userId}
             </if>
+            <!-- 로그인 사용자(viewerId)가 숨긴 작성자의 글 제외.
+                 본인 글은 본인을 숨길 수 없으므로 절대 제외되지 않음 -->
+            <if test="viewerId != null and viewerId != ''">
+                AND p.user_id NOT IN (
+                    SELECT hidden_user_id FROM hidden_user WHERE hider_id = #{viewerId}
+                )
+            </if>
         </where>
         ORDER BY p.post_id DESC
     </select>
@@ -101,6 +108,44 @@
         FROM posts
         WHERE post_id = #{postId}
     </select>
+
+    <!-- 게시물 수정 (스칼라 필드만; 이미지/블록/일정은 별도) -->
+    <update id="updatePost">
+        UPDATE posts
+        SET title            = #{title},
+            subtitle         = #{subtitle},
+            price            = #{price},
+            discount_rate    = #{discount_rate},
+            duration         = #{duration},
+            max_participants = #{max_participants},
+            city_name        = #{city_name},
+            country          = #{country},
+            lat              = #{lat},
+            lng              = #{lng},
+            updated_at       = NOW()
+        WHERE post_id = #{post_id}
+    </update>
+
+    <!-- 게시물 삭제: FK 자식부터 정리 -->
+    <delete id="deleteReviewLikesByPost">
+        DELETE FROM review_likes WHERE review_id IN (SELECT id FROM reviews WHERE post_id = #{postId})
+    </delete>
+    <delete id="deleteReviewImagesByPost">
+        DELETE FROM review_images WHERE review_id IN (SELECT id FROM reviews WHERE post_id = #{postId})
+    </delete>
+    <delete id="deleteReviewsByPost">
+        DELETE FROM reviews WHERE post_id = #{postId}
+    </delete>
+    <delete id="deleteReservationsByPost">
+        DELETE FROM reservations WHERE post_id = #{postId}
+    </delete>
+    <delete id="deleteWishlistsByPost">
+        DELETE FROM wishlists WHERE post_id = #{postId}
+    </delete>
+    <!-- posts 삭제 → post_images/post_contents/post_tags/post_schedules(+time_slots)는 ON DELETE CASCADE -->
+    <delete id="deletePostById">
+        DELETE FROM posts WHERE post_id = #{postId}
+    </delete>
 
     <!-- 코스 이미지 목록 -->
     <select id="selectPostImages" resultType="String">

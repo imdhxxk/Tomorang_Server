@@ -86,14 +86,38 @@ public class postServiceImp implements postService {
     }
 
     @Override
-    public List<postDTO> getPostList(String keyword, String city, String country, String userId) {
+    public List<postDTO> getPostList(String keyword, String city, String country, String userId, String viewerId) {
         String kw = (keyword != null && !keyword.isBlank()) ? keyword.trim() : null;
-        List<postDTO> posts = dao.selectPosts(kw, city, country, userId);
+        List<postDTO> posts = dao.selectPosts(kw, city, country, userId, viewerId);
         for (postDTO post : posts) {
             post.setImages(dao.selectPostImages(post.getPost_id()));
             post.setContentBlocks(dao.selectPostContents(post.getPost_id()));
         }
         return posts;
+    }
+
+    @Override
+    public postDTO findPostById(Long postId) {
+        return dao.selectPostById(postId);
+    }
+
+    @Override
+    @Transactional
+    public void updatePost(postDTO dto) {
+        dao.updatePost(dto);
+    }
+
+    @Override
+    @Transactional
+    public void deletePost(Long postId) {
+        // FK 자식부터 정리 (reviews/reservations/wishlists는 CASCADE 없음)
+        dao.deleteReviewLikesByPost(postId);
+        dao.deleteReviewImagesByPost(postId);
+        dao.deleteReviewsByPost(postId);
+        dao.deleteReservationsByPost(postId);
+        dao.deleteWishlistsByPost(postId);
+        // posts 삭제 → images/contents/tags/schedules(+time_slots) CASCADE
+        dao.deletePostById(postId);
     }
 
     @Override

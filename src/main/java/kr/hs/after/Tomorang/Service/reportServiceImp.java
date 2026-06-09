@@ -16,8 +16,9 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class reportServiceImp implements reportService {
 
-    private final reportDAO dao;
-    private final postDAO   postDAO;
+    private final reportDAO         dao;
+    private final postDAO           postDAO;
+    private final hiddenUserService hiddenUserService;
 
     private static final Set<String> VALID_REASONS =
             Set.of("SPAM", "INAPPROPRIATE", "FRAUD", "HARASSMENT", "OTHER");
@@ -48,7 +49,11 @@ public class reportServiceImp implements reportService {
             throw new IllegalArgumentException("본인 게시물은 신고할 수 없습니다.");
         }
 
-        // 4. 중복 신고 차단 (409)
+        // 4. 신고 성공 흐름 → 작성자 자동 숨김 (REQUIRES_NEW로 독립 커밋)
+        //    중복 신고로 아래에서 409가 나도 숨김은 유지됨
+        hiddenUserService.autoHideFromReport(reporterId, post.getUser_id());
+
+        // 5. 중복 신고 차단 (409)  — 숨김은 위에서 이미 보장됨
         if (dao.existsReport(reporterId, dto.getTargetType(), dto.getTargetId())) {
             throw new DuplicateReportException("이미 신고한 게시물입니다.");
         }

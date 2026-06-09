@@ -84,11 +84,22 @@ public class postController {
             content = @Content(schema = @Schema(implementation = postDTO.class)))
     @GetMapping
     public ResponseEntity<List<postDTO>> getPostList(
+            @Parameter(description = "Bearer JWT 토큰 (있으면 내가 숨긴 작성자 글 제외)")
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
             @Parameter(description = "검색 키워드", example = "야경") @RequestParam(required = false) String keyword,
             @Parameter(description = "도시 필터",   example = "서울") @RequestParam(required = false) String city,
             @Parameter(description = "국가 필터",   example = "한국") @RequestParam(required = false) String country,
             @Parameter(description = "안내자 ID",   example = "guide123") @RequestParam(required = false) String userId) {
-        return ResponseEntity.ok(service.getPostList(keyword, city, country, userId));
+        // 토큰이 유효하면 viewerId → 그 사용자가 숨긴 작성자의 글 제외. 토큰 없으면 전체 노출
+        String viewerId = userIdOrNull(authHeader);
+        return ResponseEntity.ok(service.getPostList(keyword, city, country, userId, viewerId));
+    }
+
+    /** 토큰에서 사용자 ID 추출 (무효/누락 시 null) */
+    private String userIdOrNull(String authHeader) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) return null;
+        String token = authHeader.replace("Bearer ", "");
+        return jwtUtil.validateToken(token) ? jwtUtil.getUserId(token) : null;
     }
 
     /* ───────────── 게시물 상세 조회 ───────────── */
@@ -109,5 +120,60 @@ public class postController {
         postDTO post = service.getPostDetail(id);
         if (post == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).body("게시물을 찾을 수 없습니다.");
         return ResponseEntity.ok(post);
+    }
+
+    /* ───────────── 게시물 수정 ───────────── */
+    @Operation(
+        summary = "게시물 수정",
+        description = "작성자(GUIDE) 본인만 수정 가능. 제목·부제·가격·할인율·소요시간·인원·도시·국가·좌표 등 수정.",
+        security = @SecurityRequirement(name = "BearerAuth")
+    )
+    @ApiResponse(responseCode = "200", description = "수정 성공",
+            content = @Content(schema = @Schema(implementation = postDTO.class)))
+    @ApiResponse(responseCode = "401", description = "로그인 필요")
+    @ApiResponse(responseCode = "403", description = "GUIDE 아님 / 작성자 아님")
+    @ApiResponse(responseCode = "404", description = "게시물 없음")
+    @PutMapping(value = "/{id}", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<?> updatePost(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @PathVariable Long id,
+            @RequestBody postDTO dto) {
+        String me = userIdOrNull(authHeader);
+        if (me == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "로그인이 필요합니다."));
+        if (!"GUIDE".equals(memberService.getRole(me)))
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "안내자(GUIDE)만 수정할 수 있습니다."));
+        postDTO existing = service.findPostById(id);
+        if (existing == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "게시물을 찾을 수 없습니다."));
+        if (!me.equals(existing.getUser_id()))
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "본인 게시물만 수정할 수 있습니다."));
+        dto.setPost_id(id);
+        service.updatePost(dto);
+        return ResponseEntity.ok(service.getPostDetail(id));
+    }
+
+    /* ───────────── 게시물 삭제 ───────────── */
+    @Operation(
+        summary = "게시물 삭제",
+        description = "작성자(GUIDE) 본인만 삭제 가능. 삭제 후 목록(GET /api/post)에서 제외됩니다.",
+        security = @SecurityRequirement(name = "BearerAuth")
+    )
+    @ApiResponse(responseCode = "204", description = "삭제 성공")
+    @ApiResponse(responseCode = "401", description = "로그인 필요")
+    @ApiResponse(responseCode = "403", description = "GUIDE 아님 / 작성자 아님")
+    @ApiResponse(responseCode = "404", description = "게시물 없음")
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deletePost(
+            @RequestHeader(value = "Authorization", required = false) String authHeader,
+            @PathVariable Long id) {
+        String me = userIdOrNull(authHeader);
+        if (me == null) return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "로그인이 필요합니다."));
+        if (!"GUIDE".equals(memberService.getRole(me)))
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "안내자(GUIDE)만 삭제할 수 있습니다."));
+        postDTO existing = service.findPostById(id);
+        if (existing == null) return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "게시물을 찾을 수 없습니다."));
+        if (!me.equals(existing.getUser_id()))
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "본인 게시물만 삭제할 수 있습니다."));
+        service.deletePost(id);
+        return ResponseEntity.noContent().build();   // 204
     }
 }
