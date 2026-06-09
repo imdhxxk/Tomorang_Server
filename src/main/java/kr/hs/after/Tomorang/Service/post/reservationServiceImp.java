@@ -3,6 +3,8 @@ package kr.hs.after.Tomorang.Service.post;
 import kr.hs.after.Tomorang.DAO.post.reservationDAO;
 import kr.hs.after.Tomorang.DTO.post.reservationDTO;
 import kr.hs.after.Tomorang.DTO.post.timeSlotDTO;
+import kr.hs.after.Tomorang.Service.chatRoomService;
+import kr.hs.after.Tomorang.model.chatRoom;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +17,7 @@ import java.util.NoSuchElementException;
 public class reservationServiceImp implements reservationService {
 
     private final reservationDAO dao;
+    private final chatRoomService chatRoomService;
 
     /* ───────────── 예약 신청 (항상 PENDING) ───────────── */
     @Override
@@ -81,7 +84,12 @@ public class reservationServiceImp implements reservationService {
         dao.updateReservationStatus(reservationId, "CONFIRMED");
         dao.updateSlotBooking(r.getSlotId(), requestTotal);
 
-        return dao.selectReservationById(reservationId);
+        // 발견자(requester) ↔ 가이드(guideId) 채팅방 생성 또는 재사용
+        chatRoom room = chatRoomService.getOrCreateChatRoom(r.getMemberId(), guideId);
+
+        reservationDTO result = dao.selectReservationById(reservationId);
+        result.setChatRoomId(room.getRoomId());   // 응답에 채팅방 ID 포함
+        return result;
     }
 
     /* ───────────── 예약 거절 (PENDING → REJECTED) ───────────── */

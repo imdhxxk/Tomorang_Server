@@ -6,6 +6,7 @@ import kr.hs.after.Tomorang.model.chatRoom;
 import kr.hs.after.Tomorang.DAO.chatMessageDAO;
 import kr.hs.after.Tomorang.DTO.chatMessageDTO;
 import kr.hs.after.Tomorang.DTO.chatRoomSummaryDTO;
+import kr.hs.after.Tomorang.DTO.roomContextDTO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -75,12 +76,19 @@ public class chatService {
             chatMessage last = chatMessageMapper.findLastMessageByRoomId(room.getRoomId());
             int unread = chatMessageMapper.countUnread(room.getRoomId(), userId);
 
+            // 예약→게시글 컨텍스트 (postId는 숫자, roomId(UUID)와 분리)
+            roomContextDTO ctx = chatRoomMapper.findRoomContext(room.getUser1(), room.getUser2());
+
             return chatRoomSummaryDTO.builder()
                     .roomId(room.getRoomId())
                     .otherUser(otherUser)
                     .lastMessage(last != null ? last.getContent() : null)
                     .lastMessageTime(last != null ? last.getTimestamp() : room.getCreatedAt())
                     .unreadCount(unread)
+                    .reservationId(ctx != null ? ctx.getReservationId() : null)
+                    .postId(ctx != null ? ctx.getPostId() : null)
+                    .postTitle(ctx != null ? ctx.getPostTitle() : null)
+                    .thumbnailUrl(ctx != null ? ctx.getThumbnailUrl() : null)
                     .build();
         }).collect(Collectors.toList());
     }

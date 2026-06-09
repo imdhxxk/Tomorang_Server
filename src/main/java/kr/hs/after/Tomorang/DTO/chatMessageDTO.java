@@ -14,6 +14,9 @@ import java.time.LocalDateTime;
 @Builder
 public class chatMessageDTO {
 
+    @io.swagger.v3.oas.annotations.media.Schema(description = "메시지 고유 ID (저장 후 부여)", example = "1")
+    private Long messageId;
+
     private String roomId;
     private String sender;
     private String recipient;
@@ -24,6 +27,7 @@ public class chatMessageDTO {
 
     public static chatMessageDTO fromEntity(chatMessage message) {
         return chatMessageDTO.builder()
+                .messageId(message.getId())
                 .roomId(message.getRoomId())
                 .sender(message.getSender())
                 .recipient(message.getRecipient())

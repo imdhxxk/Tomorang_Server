@@ -47,4 +47,19 @@
         ) DESC
     </select>
 
+    <!-- 두 사용자 간 예약→게시글 컨텍스트 (확정 예약 우선, 최신순). postId는 숫자 게시글 ID -->
+    <select id="findRoomContext" resultType="kr.hs.after.Tomorang.DTO.roomContextDTO">
+        SELECT r.id      AS reservationId,
+               p.post_id AS postId,
+               p.title   AS postTitle,
+               (SELECT image_url FROM post_images
+                 WHERE post_id = p.post_id ORDER BY image_id ASC LIMIT 1) AS thumbnailUrl
+        FROM   reservations r
+               JOIN posts p ON r.post_id = p.post_id
+        WHERE  (r.member_id = #{user1} AND p.user_id = #{user2})
+            OR (r.member_id = #{user2} AND p.user_id = #{user1})
+        ORDER BY (r.status = 'CONFIRMED') DESC, r.created_at DESC
+        LIMIT 1
+    </select>
+
 </mapper>

@@ -13,6 +13,7 @@ import kr.hs.after.Tomorang.Service.chatRoomService;
 import kr.hs.after.Tomorang.Service.chatService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Tag(name = "채팅", description = "채팅방 생성·조회, 메시지 히스토리, 읽음 처리 (실시간: WebSocket STOMP)")
 @RestController
@@ -59,6 +61,56 @@ public class chatController {
         if (chatMessage.getRoomId() != null) {
             messagingTemplate.convertAndSend("/topic/room/" + chatMessage.getRoomId(), savedMessage);
         }
+    }
+
+    /* ───────────── [REST] 채팅 메시지 전송 ───────────── */
+    @Operation(
+        summary = "[REST] 채팅 메시지 전송",
+        description = """
+                채팅 메시지를 DB에 저장하고 저장된 메시지(messageId·timestamp 포함)를 반환합니다.
+                WebSocket 없이 HTTP로 보낼 때 사용하며, 저장된 메시지는 이후
+                `GET /api/chat/history/{roomId}` 응답에 그대로 포함됩니다.
+
+                - roomId 누락 → 400 / 존재하지 않는 방 → 404
+                - sender가 해당 방 참여자가 아니면 → 403
+                - recipient는 방의 상대방으로 자동 설정됩니다.
+                """
+    )
+    @ApiResponse(responseCode = "200", description = "전송/저장 성공",
+            content = @Content(schema = @Schema(implementation = chatMessageDTO.class)))
+    @ApiResponse(responseCode = "400", description = "roomId/sender/content 누락")
+    @ApiResponse(responseCode = "403", description = "해당 채팅방 참여자가 아님")
+    @ApiResponse(responseCode = "404", description = "존재하지 않는 채팅방")
+    @PostMapping("/api/chat/message")
+    public ResponseEntity<?> sendMessage(@RequestBody chatMessageDTO dto) {
+        if (dto.getRoomId() == null || dto.getRoomId().isBlank())
+            return ResponseEntity.badRequest().body(Map.of("error", "roomId는 필수입니다."));
+        if (dto.getSender() == null || dto.getSender().isBlank())
+            return ResponseEntity.badRequest().body(Map.of("error", "sender는 필수입니다."));
+        if (dto.getContent() == null || dto.getContent().isBlank())
+            return ResponseEntity.badRequest().body(Map.of("error", "content는 필수입니다."));
+
+        Optional<chatRoom> roomOpt = chatRoomService.getChatRoomByRoomId(dto.getRoomId());
+        if (roomOpt.isEmpty())
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "존재하지 않는 채팅방입니다."));
+
+        chatRoom room = roomOpt.get();
+        if (!room.getUser1().equals(dto.getSender()) && !room.getUser2().equals(dto.getSender()))
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(Map.of("error", "해당 채팅방의 참여자가 아닙니다."));
+
+        // recipient는 방의 상대방으로 자동 설정
+        String recipient = room.getUser1().equals(dto.getSender()) ? room.getUser2() : room.getUser1();
+        dto.setRecipient(recipient);
+        dto.setType(kr.hs.after.Tomorang.model.chatMessage.MessageType.CHAT);
+
+        chatMessageDTO saved = chatService.saveMessage(dto);   // messageId·timestamp 채워짐
+
+        // WebSocket 구독자에게도 실시간 전달
+        messagingTemplate.convertAndSendToUser(recipient,        "/queue/messages", saved);
+        messagingTemplate.convertAndSendToUser(dto.getSender(),  "/queue/messages", saved);
+        messagingTemplate.convertAndSend("/topic/room/" + dto.getRoomId(), saved);
+
+        return ResponseEntity.ok(saved);
     }
 
     /* ───────────── 채팅방 생성 / 조회 ───────────── */

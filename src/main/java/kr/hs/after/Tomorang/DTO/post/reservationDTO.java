@@ -26,6 +26,12 @@ public class reservationDTO {
     @Schema(description = "예약 신청자 ID (requesterId와 동일, 프론트 호환용)", example = "discoverer1")
     private String memberId;
 
+    @Schema(description = "게시글 작성자(가이드) ID", example = "guide1")
+    private String guideId;
+
+    @Schema(description = "연결된 채팅방 ID (UUID). 예약 수락 시 생성/연결되어 채워짐", example = "550e8400-e29b-41d4-a716-446655440000")
+    private String chatRoomId;
+
     @Schema(description = "타임슬롯 ID", example = "slot_20260601_1000")
     private String slotId;
 

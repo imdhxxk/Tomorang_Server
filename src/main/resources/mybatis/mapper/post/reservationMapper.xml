@@ -39,6 +39,7 @@
         p.title           AS postTitle,
         r.member_id       AS requesterId,
         r.member_id       AS memberId,
+        p.user_id         AS guideId,
         r.slot_id         AS slotId,
         ps.available_date AS slotDate,
         ts.available_time AS slotTime,
