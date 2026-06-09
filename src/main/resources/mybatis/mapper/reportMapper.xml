@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.hs.after.Tomorang.DAO.reportDAO">
+
+    <!-- 신고 저장 (status 항상 PENDING) -->
+    <insert id="insertReport" useGeneratedKeys="true" keyProperty="reportId">
+        INSERT INTO reports (target_type, target_id, reporter_id, reason, content, status)
+        VALUES (#{targetType}, #{targetId}, #{reporterId}, #{reason}, #{content}, 'PENDING')
+    </insert>
+
+    <!-- 중복 신고 여부 -->
+    <select id="existsReport" resultType="boolean">
+        SELECT COUNT(*) > 0
+        FROM reports
+        WHERE reporter_id = #{reporterId}
+          AND target_type = #{targetType}
+          AND target_id   = #{targetId}
+    </select>
+
+    <!-- 신고 단건 조회 (모든 컬럼 명시 별칭 → 매핑 안전) -->
+    <select id="selectReportById" resultType="kr.hs.after.Tomorang.DTO.reportDTO">
+        SELECT id          AS reportId,
+               target_type AS targetType,
+               target_id   AS targetId,
+               reporter_id AS reporterId,
+               reason,
+               content,
+               status,
+               created_at  AS createdAt
+        FROM reports
+        WHERE id = #{reportId}
+    </select>
+
+</mapper>
