@@ -20,6 +20,12 @@ public class reservationDTO {
     @Schema(description = "게시물 제목 (조회 시 반환)")
     private String postTitle;
 
+    @Schema(description = "예약 신청자(발견자) ID (조회 시 반환)", example = "discoverer1")
+    private String requesterId;
+
+    @Schema(description = "예약 신청자 ID (requesterId와 동일, 프론트 호환용)", example = "discoverer1")
+    private String memberId;
+
     @Schema(description = "타임슬롯 ID", example = "slot_20260601_1000")
     private String slotId;
 
@@ -35,7 +41,20 @@ public class reservationDTO {
     @Schema(description = "어린이 인원 (0 이상)", example = "1")
     private int childCount;
 
-    @Schema(description = "예약 상태 (CONFIRMED / CANCELLED)")
+    @Schema(description = "요청사항 / 메모 (선택)", example = "아이 동반입니다. 천천히 부탁드려요.")
+    private String request;
+
+    @Schema(
+        description = """
+                예약 상태
+                - PENDING: 발견자가 신청, 가이드 확인 전 (신청 직후 기본값)
+                - CONFIRMED: 가이드가 수락함 (이후 채팅 가능)
+                - REJECTED: 가이드가 거절함
+                - COMPLETED: 투어 완료
+                - CANCELLED: 발견자/시스템 취소
+                """,
+        allowableValues = {"PENDING", "CONFIRMED", "REJECTED", "COMPLETED", "CANCELLED"},
+        example = "PENDING")
     private String status;
 
     @Schema(description = "예약 일시 (조회 시 반환)")

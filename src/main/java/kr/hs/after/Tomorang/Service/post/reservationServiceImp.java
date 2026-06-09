@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.NoSuchElementException;
 
 @Service
 @RequiredArgsConstructor
@@ -15,21 +16,20 @@ public class reservationServiceImp implements reservationService {
 
     private final reservationDAO dao;
 
+    /* ───────────── 예약 신청 (항상 PENDING) ───────────── */
     @Override
     @Transactional
-    public void book(String memberId, reservationDTO dto) {
+    public reservationDTO book(String memberId, reservationDTO dto) {
 
-        // ── 1. 음수 인원 검증 ──────────────────────────────
+        // 1. 음수 인원 검증
         if (dto.getAdultCount() < 0 || dto.getChildCount() < 0) {
             throw new IllegalArgumentException("인원 수는 0명 이상이어야 합니다.");
         }
-
-        // ── 2. 최소 1명 이상 ──────────────────────────────
+        // 2. 최소 1명 이상
         if (dto.getAdultCount() + dto.getChildCount() == 0) {
             throw new IllegalArgumentException("최소 1명 이상 예약해야 합니다.");
         }
-
-        // ── 3. 슬롯 조회 (FOR UPDATE — 동시 예약 방지) ────
+        // 3. 슬롯 존재 + 오픈 여부 확인 (인원 증가는 수락 시에만!)
         timeSlotDTO slot = dao.selectSlotForUpdate(dto.getSlotId());
         if (slot == null) {
             throw new IllegalArgumentException("존재하지 않는 시간대입니다.");
@@ -38,24 +38,78 @@ public class reservationServiceImp implements reservationService {
             throw new IllegalStateException("이미 마감된 시간대입니다.");
         }
 
-        // ── 4. 잔여 인원 확인 ─────────────────────────────
-        int requestTotal = dto.getAdultCount() + dto.getChildCount();
-        int remaining    = slot.getMaxCapacity() - slot.getBookedCount();
-        if (requestTotal > remaining) {
-            throw new IllegalStateException(
-                "잔여 인원이 부족합니다. (남은 자리: " + remaining + "명)"
-            );
-        }
-
-        // ── 5. 예약 저장 ──────────────────────────────────
+        // 4. 예약 저장 (status = PENDING, booked_count 변동 없음)
         dao.insertReservation(memberId, dto);
 
-        // ── 6. 슬롯 인원 업데이트 (꽉 차면 자동 CLOSED) ──
-        dao.updateSlotBooking(dto.getSlotId(), requestTotal);
+        // 5. 생성된 예약 반환
+        return dao.selectReservationById(dto.getId());
     }
 
+    /* ───────────── 내 예약 목록 (역할별) ───────────── */
     @Override
-    public List<reservationDTO> getMyReservations(String memberId) {
+    public List<reservationDTO> getMyReservations(String memberId, String role) {
+        if ("GUIDE".equals(role)) {
+            return dao.selectReservationsForGuide(memberId);
+        }
         return dao.selectMyReservations(memberId);
+    }
+
+    /* ───────────── 예약 수락 (PENDING → CONFIRMED) ───────────── */
+    @Override
+    @Transactional
+    public reservationDTO accept(Long reservationId, String guideId) {
+        reservationDTO r = loadAndAuthorize(reservationId, guideId);
+
+        // PENDING만 수락 가능
+        if (!"PENDING".equals(r.getStatus())) {
+            throw new IllegalStateException("이미 처리된 예약입니다. (현재 상태: " + r.getStatus() + ")");
+        }
+
+        int requestTotal = r.getAdultCount() + r.getChildCount();
+
+        // 슬롯 잠금 후 정원 확인 (정원 초과 방지)
+        timeSlotDTO slot = dao.selectSlotForUpdate(r.getSlotId());
+        if (slot == null) {
+            throw new IllegalStateException("시간대 정보를 찾을 수 없습니다.");
+        }
+        int remaining = slot.getMaxCapacity() - slot.getBookedCount();
+        if (requestTotal > remaining) {
+            throw new IllegalStateException("잔여 인원이 부족합니다. (남은 자리: " + remaining + "명)");
+        }
+
+        // 상태 변경 + 슬롯 인원 증가 (꽉 차면 자동 CLOSED)
+        dao.updateReservationStatus(reservationId, "CONFIRMED");
+        dao.updateSlotBooking(r.getSlotId(), requestTotal);
+
+        return dao.selectReservationById(reservationId);
+    }
+
+    /* ───────────── 예약 거절 (PENDING → REJECTED) ───────────── */
+    @Override
+    @Transactional
+    public reservationDTO reject(Long reservationId, String guideId) {
+        reservationDTO r = loadAndAuthorize(reservationId, guideId);
+
+        if (!"PENDING".equals(r.getStatus())) {
+            throw new IllegalStateException("이미 처리된 예약입니다. (현재 상태: " + r.getStatus() + ")");
+        }
+
+        // 거절은 슬롯 인원 변동 없음
+        dao.updateReservationStatus(reservationId, "REJECTED");
+
+        return dao.selectReservationById(reservationId);
+    }
+
+    /* ───────────── 공통: 예약 로드 + 가이드 권한 검증 ───────────── */
+    private reservationDTO loadAndAuthorize(Long reservationId, String guideId) {
+        reservationDTO r = dao.selectReservationById(reservationId);
+        if (r == null) {
+            throw new NoSuchElementException("예약을 찾을 수 없습니다.");   // → 404
+        }
+        String owner = dao.selectPostAuthorByReservationId(reservationId);
+        if (owner == null || !owner.equals(guideId)) {
+            throw new SecurityException("본인 게시물의 예약만 처리할 수 있습니다."); // → 403
+        }
+        return r;
     }
 }
