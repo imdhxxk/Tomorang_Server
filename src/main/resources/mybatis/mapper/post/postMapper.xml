@@ -69,11 +69,14 @@
     <select id="selectPosts" resultMap="postResultMap">
         SELECT DISTINCT
                p.post_id, p.user_id, p.title, p.subtitle, p.price, p.discount_rate,
-               p.duration, p.max_participants, p.rating, p.review_count, p.like_count,
+               p.duration, p.max_participants, p.rating, p.review_count,
+               COALESCE(w.cnt, 0) AS like_count,
                p.city_name, p.country, p.lat, p.lng,
                p.created_at, p.updated_at
         FROM   posts p
                LEFT JOIN post_tags t ON p.post_id = t.post_id
+               LEFT JOIN (SELECT post_id, COUNT(*) AS cnt FROM wishlists GROUP BY post_id) w
+                         ON p.post_id = w.post_id
         <where>
             <if test="keyword != null and keyword != ''">
                 AND (p.title    LIKE CONCAT('%', #{keyword}, '%')
@@ -100,13 +103,16 @@
         ORDER BY p.post_id DESC
     </select>
 
-    <!-- 게시물 단건 조회 -->
+    <!-- 게시물 단건 조회 (like_count = 찜 수 COUNT) -->
     <select id="selectPostById" resultMap="postResultMap">
-        SELECT post_id, user_id, title, subtitle, price, discount_rate, duration,
-               max_participants, rating, review_count, like_count,
-               city_name, country, lat, lng, created_at, updated_at
-        FROM posts
-        WHERE post_id = #{postId}
+        SELECT p.post_id, p.user_id, p.title, p.subtitle, p.price, p.discount_rate, p.duration,
+               p.max_participants, p.rating, p.review_count,
+               COALESCE(w.cnt, 0) AS like_count,
+               p.city_name, p.country, p.lat, p.lng, p.created_at, p.updated_at
+        FROM posts p
+             LEFT JOIN (SELECT post_id, COUNT(*) AS cnt FROM wishlists GROUP BY post_id) w
+                       ON p.post_id = w.post_id
+        WHERE p.post_id = #{postId}
     </select>
 
     <!-- 게시물 수정 (스칼라 필드만; 이미지/블록/일정은 별도) -->
