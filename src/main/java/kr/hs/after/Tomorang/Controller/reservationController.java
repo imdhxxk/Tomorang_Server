@@ -59,7 +59,7 @@ public class reservationController {
             @RequestBody reservationDTO dto) {
         try {
             String me = userId(authHeader);
-            if (!"DISCOVERER".equals(memberService.getRole(me))) {
+            if (!memberService.isDiscovererRole(memberService.getRole(me))) {
                 return ResponseEntity.status(HttpStatus.FORBIDDEN)
                         .body(Map.of("error", "발견자(DISCOVERER)만 예약할 수 있습니다."));
             }

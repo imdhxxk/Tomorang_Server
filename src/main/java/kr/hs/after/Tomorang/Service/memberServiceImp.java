@@ -35,13 +35,15 @@ public class memberServiceImp implements memberService {
     @Value("${cloud.aws.s3.bucket}")
     private String bucket;
 
-    private static final Set<String> VALID_ROLES = Set.of("GUIDE", "DISCOVERER");
+    // 프론트는 TRAVELER, 내부/기존데이터는 DISCOVERER/발견자를 쓰므로 모두 허용
+    private static final Set<String> VALID_ROLES = Set.of("GUIDE", "DISCOVERER", "TRAVELER");
 
     /** 역할 유효성 검사 */
     private void validateRole(String role) {
-        if (role == null || !VALID_ROLES.contains(role.toUpperCase())) {
+        if (role == null
+                || (!VALID_ROLES.contains(role.toUpperCase()) && !"발견자".equals(role.trim()))) {
             throw new IllegalArgumentException(
-                "역할은 GUIDE 또는 DISCOVERER만 허용됩니다. (입력값: " + role + ")"
+                "역할은 GUIDE 또는 DISCOVERER(TRAVELER)만 허용됩니다. (입력값: " + role + ")"
             );
         }
     }

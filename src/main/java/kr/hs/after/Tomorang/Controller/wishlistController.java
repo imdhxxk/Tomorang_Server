@@ -40,7 +40,7 @@ public class wishlistController {
             @Parameter(description = "Bearer JWT 토큰", required = true)
             @RequestHeader("Authorization") String authHeader) {
         String userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
-        if (!"DISCOVERER".equals(memberService.getRole(userId))) {
+        if (!memberService.isDiscovererRole(memberService.getRole(userId))) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN)
                     .body(Map.of("error", "발견자(DISCOVERER)만 찜할 수 있습니다."));
         }
