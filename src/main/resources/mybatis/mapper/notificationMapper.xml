@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kr.hs.after.Tomorang.DAO.notificationDAO">
+
+    <!-- 알림 저장 -->
+    <insert id="insertNotification" useGeneratedKeys="true" keyProperty="notificationId">
+        INSERT INTO notifications
+            (receiver_id, sender_id, type, title, message, post_id, reservation_id, review_id)
+        VALUES
+            (#{receiverId}, #{senderId}, #{type}, #{title}, #{message},
+             #{postId}, #{reservationId}, #{reviewId})
+    </insert>
+
+    <!-- 받는 사람 기준 목록 (최신순). 컬럼 명시 별칭 → 매핑 안전 -->
+    <select id="selectByReceiver" resultType="kr.hs.after.Tomorang.DTO.notificationDTO">
+        SELECT notification_id AS notificationId,
+               receiver_id     AS receiverId,
+               sender_id       AS senderId,
+               type,
+               title,
+               message,
+               post_id         AS postId,
+               reservation_id  AS reservationId,
+               review_id       AS reviewId,
+               is_read         AS isRead,
+               created_at      AS createdAt
+        FROM   notifications
+        WHERE  receiver_id = #{receiverId}
+        ORDER  BY created_at DESC, notification_id DESC
+    </select>
+
+    <!-- 단건 읽음 처리 -->
+    <update id="markAsRead">
+        UPDATE notifications SET is_read = TRUE WHERE notification_id = #{notificationId}
+    </update>
+
+    <!-- 전체 읽음 처리 (받는 사람의 안 읽은 것) -->
+    <update id="markAllAsRead">
+        UPDATE notifications SET is_read = TRUE
+        WHERE receiver_id = #{receiverId} AND is_read = FALSE
+    </update>
+
+    <!-- 안 읽은 개수 -->
+    <select id="countUnread" resultType="int">
+        SELECT COUNT(*) FROM notifications
+        WHERE receiver_id = #{receiverId} AND is_read = FALSE
+    </select>
+
+</mapper>

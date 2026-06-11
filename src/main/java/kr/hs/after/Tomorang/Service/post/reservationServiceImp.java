@@ -4,8 +4,10 @@ import kr.hs.after.Tomorang.DAO.post.reservationDAO;
 import kr.hs.after.Tomorang.DTO.post.reservationDTO;
 import kr.hs.after.Tomorang.DTO.post.timeSlotDTO;
 import kr.hs.after.Tomorang.Service.chatRoomService;
+import kr.hs.after.Tomorang.Service.notificationService;
 import kr.hs.after.Tomorang.model.chatRoom;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,10 +16,12 @@ import java.util.NoSuchElementException;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class reservationServiceImp implements reservationService {
 
-    private final reservationDAO dao;
-    private final chatRoomService chatRoomService;
+    private final reservationDAO      dao;
+    private final chatRoomService     chatRoomService;
+    private final notificationService notificationService;
 
     /* ───────────── 예약 신청 (항상 PENDING) ───────────── */
     @Override
@@ -89,6 +93,11 @@ public class reservationServiceImp implements reservationService {
 
         reservationDTO result = dao.selectReservationById(reservationId);
         result.setChatRoomId(room.getRoomId());   // 응답에 채팅방 ID 포함
+
+        // 발견자에게 "예약 확정" 알림 (실패해도 수락 자체는 성공 처리)
+        try { notificationService.notifyReservationConfirmed(result); }
+        catch (Exception e) { log.warn("예약 확정 알림 생성 실패: {}", e.getMessage()); }
+
         return result;
     }
 
@@ -105,7 +114,13 @@ public class reservationServiceImp implements reservationService {
         // 거절은 슬롯 인원 변동 없음
         dao.updateReservationStatus(reservationId, "REJECTED");
 
-        return dao.selectReservationById(reservationId);
+        reservationDTO result = dao.selectReservationById(reservationId);
+
+        // 발견자에게 "예약 거절" 알림 (실패해도 거절 자체는 성공 처리)
+        try { notificationService.notifyReservationRejected(result); }
+        catch (Exception e) { log.warn("예약 거절 알림 생성 실패: {}", e.getMessage()); }
+
+        return result;
     }
 
     /* ───────────── 공통: 예약 로드 + 가이드 권한 검증 ───────────── */
