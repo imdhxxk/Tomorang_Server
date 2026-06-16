@@ -14,6 +14,8 @@ public interface notificationService {
     int getUnreadCount(String receiverId);
 
     /* ── 서버 이벤트에서 자동 생성 (예약/리뷰 서비스가 호출) ── */
+    /** 예약 신청 → 게시글 작성자(가이드)에게 알림 (예약 트랜잭션 내에서 함께 저장) */
+    void notifyReservationRequested(reservationDTO reservation);
     /** 예약 확정 → 신청한 발견자에게 알림 */
     void notifyReservationConfirmed(reservationDTO reservation);
     /** 예약 거절 → 신청한 발견자에게 알림 */

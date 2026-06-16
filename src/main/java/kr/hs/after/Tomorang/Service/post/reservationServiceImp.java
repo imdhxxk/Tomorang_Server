@@ -48,8 +48,14 @@ public class reservationServiceImp implements reservationService {
         // 4. 예약 저장 (status = PENDING, booked_count 변동 없음)
         dao.insertReservation(memberId, dto);
 
-        // 5. 생성된 예약 반환
-        return dao.selectReservationById(dto.getId());
+        // 5. 생성된 예약 조회
+        reservationDTO result = dao.selectReservationById(dto.getId());
+
+        // 6. 게시글 작성자(가이드)에게 "새 예약 요청" 알림 — 같은 트랜잭션에서 함께 저장
+        //    (예약 저장이 롤백되면 알림도 같이 롤백됨)
+        notificationService.notifyReservationRequested(result);
+
+        return result;
     }
 
     /* ───────────── 내 예약 목록 (역할별) ───────────── */

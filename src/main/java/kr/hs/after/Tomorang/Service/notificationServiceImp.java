@@ -43,6 +43,19 @@ public class notificationServiceImp implements notificationService {
         return dao.countUnread(receiverId);
     }
 
+    /* ───────────── 예약 신청 알림 (예약 트랜잭션 내에서 함께 저장 — REQUIRES_NEW 아님) ───────────── */
+    @Override
+    public void notifyReservationRequested(reservationDTO r) {
+        // 게시글 작성자(가이드)에게. (작성자와 신청자가 같으면 알림 생략)
+        if (r.getGuideId() == null || r.getGuideId().equals(r.getMemberId())) return;
+        notificationDTO n = base(r.getGuideId(), r.getMemberId(), "RESERVATION_REQUESTED",
+                "새 예약 요청이 왔어요!",
+                "[" + r.getPostTitle() + "]에 새로운 예약 요청이 도착했어요.");
+        n.setPostId(r.getPostId());
+        n.setReservationId(r.getId());
+        dao.insertNotification(n);
+    }
+
     /* ───────────── 자동 생성 (예약/리뷰 트랜잭션과 분리: REQUIRES_NEW) ───────────── */
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)

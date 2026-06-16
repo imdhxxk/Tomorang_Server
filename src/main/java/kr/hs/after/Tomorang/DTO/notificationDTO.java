@@ -20,7 +20,7 @@ public class notificationDTO {
     private String senderId;
 
     @Schema(description = "알림 종류",
-            allowableValues = {"RESERVATION_CONFIRMED", "RESERVATION_REJECTED", "REVIEW_CREATED"},
+            allowableValues = {"RESERVATION_REQUESTED", "RESERVATION_CONFIRMED", "RESERVATION_REJECTED", "REVIEW_CREATED"},
             example = "RESERVATION_CONFIRMED")
     private String type;
 
