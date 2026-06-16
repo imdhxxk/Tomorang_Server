@@ -168,6 +168,9 @@ public class memberController {
         mypage.setInterest(profile.getInterest());
         mypage.setLanguages(profile.getLanguages());
         mypage.setLevels(profile.getLevels());
+        mypage.setNationality(profile.getNationality());
+        mypage.setDefaultLanguage(profile.getDefaultLanguage());
+        mypage.setAvgAnswerTime(profile.getAvgAnswerTime());
         mypage.setWishlists(wishlistService.getWishlists(userId));
 
         return ResponseEntity.ok(mypage);

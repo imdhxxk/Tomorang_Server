@@ -40,4 +40,21 @@ public class memberDTO {
     @Schema(description = "언어별 레벨 (1: 기초 / 2: 중급 / 3: 고급) — languages와 순서 일치",
             example = "[3, 2]")
     private List<Integer> levels;
+
+    @Schema(description = "국적 (프론트는 \"한국\"/\"일본\" 문자열 전송)", example = "한국", nullable = true)
+    private String nationality;
+
+    @Schema(description = "기본 언어 코드", example = "ko", allowableValues = {"ko", "ja"}, nullable = true)
+    private String defaultLanguage;
+
+    @Schema(description = "평균 답변시간 (가이드 전시용)", example = "평균 12분 내로 응답", nullable = true)
+    private String avgAnswerTime;
+
+    // 프론트 호환: answerTime / averageAnswerTime / average_answer_time 로도 같은 값 노출
+    @com.fasterxml.jackson.annotation.JsonProperty("answerTime")
+    public String getAnswerTime() { return avgAnswerTime; }
+    @com.fasterxml.jackson.annotation.JsonProperty("averageAnswerTime")
+    public String getAverageAnswerTime() { return avgAnswerTime; }
+    @com.fasterxml.jackson.annotation.JsonProperty("average_answer_time")
+    public String getAverageAnswerTimeSnake() { return avgAnswerTime; }
 }

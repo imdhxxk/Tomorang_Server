@@ -28,6 +28,7 @@
                m.nickName       AS nickName,
                m.image          AS image,
                m.oneWord        AS oneWord,
+               m.avg_answer_time AS avgAnswerTime,
                h.created_at     AS hiddenAt
         FROM   hidden_user h
                LEFT JOIN member m ON h.hidden_user_id = m.id

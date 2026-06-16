@@ -14,6 +14,9 @@
         <result property="image"    column="image"/>
         <result property="nickName" column="nickName"/>
         <result property="oneWord"  column="oneWord"/>
+        <result property="nationality"     column="nationality"/>
+        <result property="defaultLanguage" column="default_language"/>
+        <result property="avgAnswerTime"   column="avg_answer_time"/>
     </resultMap>
 
     <!-- 언어 resultMap: LanguageType enum + int level -->
@@ -27,8 +30,10 @@
 
     <!-- 회원가입 -->
     <insert id="insert" parameterType="kr.hs.after.Tomorang.DTO.memberDTO">
-        INSERT INTO member(id, pw, role, email, interest, image, nickName, oneWord)
-        VALUES (#{id}, #{pw}, #{role}, #{email}, #{interest}, #{image}, #{nickName}, #{oneWord})
+        INSERT INTO member(id, pw, role, email, interest, image, nickName, oneWord,
+                           nationality, default_language, avg_answer_time)
+        VALUES (#{id}, #{pw}, #{role}, #{email}, #{interest}, #{image}, #{nickName}, #{oneWord},
+                #{nationality}, #{defaultLanguage}, #{avgAnswerTime})
     </insert>
 
     <!-- 언어 추가 (KOREAN/ENGLISH/JAPANESE + 레벨 1~3) -->
@@ -53,6 +58,9 @@
             <if test="nickName != null">nickName = #{nickName},</if>
             <if test="oneWord  != null">oneWord  = #{oneWord},</if>
             <if test="pw       != null">pw       = #{pw},</if>
+            <if test="nationality     != null">nationality      = #{nationality},</if>
+            <if test="defaultLanguage != null">default_language = #{defaultLanguage},</if>
+            <if test="avgAnswerTime   != null">avg_answer_time  = #{avgAnswerTime},</if>
         </set>
         WHERE id = #{id}
     </update>
@@ -95,7 +103,8 @@
 
     <!-- 프로필 조회 -->
     <select id="selectMember" resultMap="memberResultMap">
-        SELECT id, role, email, interest, nickName, oneWord, image
+        SELECT id, role, email, interest, nickName, oneWord, image,
+               nationality, default_language, avg_answer_time
         FROM member
         WHERE id = #{id}
     </select>
@@ -119,13 +128,14 @@
                m.nickName,
                m.image,
                m.oneWord,
+               m.avg_answer_time             AS avgAnswerTime,
                COALESCE(AVG(p.rating),    0) AS avgRating,
                COALESCE(SUM(p.like_count),0) AS totalLikes,
                COUNT(p.post_id)              AS postCount
         FROM   member m
                LEFT JOIN posts p ON m.id = p.user_id
         WHERE  m.role = 'GUIDE'
-        GROUP  BY m.id, m.nickName, m.image, m.oneWord
+        GROUP  BY m.id, m.nickName, m.image, m.oneWord, m.avg_answer_time
         ORDER  BY avgRating DESC, totalLikes DESC
     </select>
 

@@ -39,4 +39,21 @@ public class mypageDTO {
 
     @Schema(description = "찜한 게시물 목록")
     private List<postDTO> wishlists;
+
+    @Schema(description = "국적", example = "한국", nullable = true)
+    private String nationality;
+
+    @Schema(description = "기본 언어 코드", example = "ko", allowableValues = {"ko", "ja"}, nullable = true)
+    private String defaultLanguage;
+
+    @Schema(description = "평균 답변시간 (가이드 전시용)", example = "평균 12분 내로 응답", nullable = true)
+    private String avgAnswerTime;
+
+    // 프론트 호환: answerTime / averageAnswerTime / average_answer_time 로도 같은 값 노출
+    @com.fasterxml.jackson.annotation.JsonProperty("answerTime")
+    public String getAnswerTime() { return avgAnswerTime; }
+    @com.fasterxml.jackson.annotation.JsonProperty("averageAnswerTime")
+    public String getAverageAnswerTime() { return avgAnswerTime; }
+    @com.fasterxml.jackson.annotation.JsonProperty("average_answer_time")
+    public String getAverageAnswerTimeSnake() { return avgAnswerTime; }
 }
