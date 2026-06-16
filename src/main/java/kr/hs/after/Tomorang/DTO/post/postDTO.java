@@ -61,6 +61,10 @@ public class postDTO {
     @Schema(description = "게시물 수정 시간")
     private LocalDateTime updatedAt;
 
+    @Schema(description = "게시물별 가이드 탭 추가 설명 (가이드 프로필 소개와 별개, 게시물마다 작성, 선택)",
+            example = "이 코스는 도보 위주라 편한 신발을 추천드려요.", nullable = true)
+    private String courseAdditionalDescription;
+
     @Schema(description = "할인 적용가 (자동 계산)", example = "40000")
     public int getDiscountedPrice() {
         if (discount_rate <= 0) return price;

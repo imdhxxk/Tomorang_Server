@@ -30,7 +30,8 @@
                p.price, p.discount_rate, p.duration,
                p.max_participants, p.rating, p.review_count, p.like_count,
                p.city_name, p.country, p.lat, p.lng,
-               p.created_at, p.updated_at
+               p.created_at, p.updated_at,
+               p.course_additional_description
         FROM   wishlists w
                JOIN posts p ON w.post_id = p.post_id
         WHERE  w.member_id = #{memberId}

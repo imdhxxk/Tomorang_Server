@@ -24,18 +24,19 @@
         <result column="lng"              property="lng"/>
         <result column="created_at"       property="createdAt"/>
         <result column="updated_at"       property="updatedAt"/>
+        <result column="course_additional_description" property="courseAdditionalDescription"/>
     </resultMap>
 
     <insert id="postInsert" useGeneratedKeys="true" keyProperty="post_id">
         INSERT INTO posts (
         user_id, title, subtitle, price, discount_rate, duration,
         max_participants, rating, review_count, like_count,
-        city_name, country, lat, lng
+        city_name, country, lat, lng, course_additional_description
         )
         VALUES (
         #{user_id}, #{title}, #{subtitle}, #{price}, #{discount_rate}, #{duration},
         #{max_participants}, #{rating}, #{review_count}, #{like_count},
-        #{city_name}, #{country}, #{lat}, #{lng}
+        #{city_name}, #{country}, #{lat}, #{lng}, #{courseAdditionalDescription}
         )
     </insert>
 
@@ -72,7 +73,7 @@
                p.duration, p.max_participants, p.rating, p.review_count,
                COALESCE(w.cnt, 0) AS like_count,
                p.city_name, p.country, p.lat, p.lng,
-               p.created_at, p.updated_at
+               p.created_at, p.updated_at, p.course_additional_description
         FROM   posts p
                LEFT JOIN post_tags t ON p.post_id = t.post_id
                LEFT JOIN (SELECT post_id, COUNT(*) AS cnt FROM wishlists GROUP BY post_id) w
@@ -108,7 +109,8 @@
         SELECT p.post_id, p.user_id, p.title, p.subtitle, p.price, p.discount_rate, p.duration,
                p.max_participants, p.rating, p.review_count,
                COALESCE(w.cnt, 0) AS like_count,
-               p.city_name, p.country, p.lat, p.lng, p.created_at, p.updated_at
+               p.city_name, p.country, p.lat, p.lng, p.created_at, p.updated_at,
+               p.course_additional_description
         FROM posts p
              LEFT JOIN (SELECT post_id, COUNT(*) AS cnt FROM wishlists GROUP BY post_id) w
                        ON p.post_id = w.post_id
@@ -128,6 +130,7 @@
             country          = #{country},
             lat              = #{lat},
             lng              = #{lng},
+            course_additional_description = #{courseAdditionalDescription},
             updated_at       = NOW()
         WHERE post_id = #{post_id}
     </update>
