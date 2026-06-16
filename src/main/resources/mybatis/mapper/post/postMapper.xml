@@ -56,7 +56,7 @@
 
     <insert id="insertPostSchedule" useGeneratedKeys="true" keyProperty="scheduleId">
         INSERT INTO post_schedules (post_id, available_date)
-        VALUES (#{post_id}, #{date})
+        VALUES (#{postId}, #{date})
     </insert>
 
     <insert id="insertTimeSlot">
