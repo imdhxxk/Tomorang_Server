@@ -44,6 +44,7 @@ public class memberController {
         description = "아이디, 비밀번호, 역할(GUIDE/TRAVELER), 언어 목록, 프로필 이미지를 등록합니다."
     )
     @ApiResponse(responseCode = "200", description = "회원가입 성공")
+    @ApiResponse(responseCode = "400", description = "입력값 검증 실패 (비밀번호 8자 미만 / 이메일 형식 오류 / 닉네임 8자 초과 / 역할 오류)")
     @ApiResponse(responseCode = "500", description = "서버 오류")
     @PostMapping(value = "/signup", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<Map<String, String>> signup(
@@ -54,6 +55,8 @@ public class memberController {
         try {
             service.insert(dto, image);
             return ResponseEntity.ok(Map.of("message", "회원가입이 성공적으로 완료되었습니다."));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

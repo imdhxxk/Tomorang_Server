@@ -48,11 +48,35 @@ public class memberServiceImp implements memberService {
         }
     }
 
+    // 이메일 형식 검증용 패턴
+    private static final java.util.regex.Pattern EMAIL_PATTERN =
+            java.util.regex.Pattern.compile("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$");
+
+    /** 회원가입 입력값 검증 (비밀번호 8자 이상 · 이메일 형식 · 닉네임 최대 8자) */
+    private void validateSignup(memberDTO dto) {
+        // 비밀번호: 8자 이상 (암호화 전 원문 길이 기준)
+        if (dto.getPw() == null || dto.getPw().length() < 8) {
+            throw new IllegalArgumentException("비밀번호는 8자 이상이어야 합니다.");
+        }
+        // 이메일: 형식 검증
+        if (dto.getEmail() == null || !EMAIL_PATTERN.matcher(dto.getEmail().trim()).matches()) {
+            throw new IllegalArgumentException("이메일 형식이 올바르지 않습니다.");
+        }
+        // 닉네임: 필수, 최대 8자
+        if (dto.getNickName() == null || dto.getNickName().isBlank()) {
+            throw new IllegalArgumentException("닉네임을 입력해주세요.");
+        }
+        if (dto.getNickName().trim().length() > 8) {
+            throw new IllegalArgumentException("닉네임은 최대 8자까지 가능합니다.");
+        }
+    }
+
     /** 회원가입 */
     @Override
     @Transactional
     public void insert(memberDTO dto, MultipartFile image) throws IOException {
         validateRole(dto.getRole());
+        validateSignup(dto);
 
         if (dto.getPw() != null) {
             dto.setPw(passwordEncoder.encode(dto.getPw()));
