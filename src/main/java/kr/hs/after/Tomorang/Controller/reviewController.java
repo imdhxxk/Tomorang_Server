@@ -34,10 +34,10 @@ public class reviewController {
         description = "별점(1~5), 내용, 사진으로 리뷰를 작성합니다. 작성 시 게시물 평점이 자동 업데이트됩니다.",
         security = @SecurityRequirement(name = "BearerAuth")
     )
-    @ApiResponse(responseCode = "200", description = "작성 성공")
+    @ApiResponse(responseCode = "200", description = "작성 성공 — 생성된 리뷰(reviewDTO, createdAt 포함) 반환")
     @ApiResponse(responseCode = "400", description = "별점 범위 오류")
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<Map<String, String>> createReview(
+    public ResponseEntity<?> createReview(
             @Parameter(description = "Bearer JWT 토큰", required = true)
             @RequestHeader("Authorization") String authHeader,
             @Parameter(description = "리뷰 정보 JSON (postId, rating, content)")
@@ -46,8 +46,8 @@ public class reviewController {
             @RequestPart(value = "images", required = false) List<MultipartFile> images) {
         try {
             String userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
-            service.createReview(userId, dto, images);
-            return ResponseEntity.ok(Map.of("message", "리뷰가 등록되었습니다."));
+            reviewDTO created = service.createReview(userId, dto, images);
+            return ResponseEntity.ok(created);
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {

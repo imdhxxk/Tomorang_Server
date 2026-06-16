@@ -42,8 +42,8 @@ public class reviewDTO {
     @Schema(description = "내가 좋아요 눌렀는지 (조회 시 반환)")
     private boolean liked;
 
-    @Schema(description = "작성 일시 (조회 시 반환)")
+    @Schema(description = "작성 일시 (ISO-8601, 실제 DB 생성시간)", example = "2026-06-17T08:33:00")
     @JsonProperty(access = JsonProperty.Access.READ_ONLY)
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createdAt;
 }

@@ -34,7 +34,7 @@ public class reviewServiceImp implements reviewService {
 
     @Override
     @Transactional
-    public void createReview(String memberId, reviewDTO dto, List<MultipartFile> images) throws IOException {
+    public reviewDTO createReview(String memberId, reviewDTO dto, List<MultipartFile> images) throws IOException {
         // postId 검증
         if (dto.getPostId() == null) {
             throw new IllegalArgumentException("postId는 필수입니다.");
@@ -72,6 +72,11 @@ public class reviewServiceImp implements reviewService {
         } catch (Exception e) {
             log.warn("리뷰 알림 생성 실패: {}", e.getMessage());
         }
+
+        // 생성된 리뷰를 다시 조회해 반환 (createdAt = 실제 DB 생성시간, 이미지 포함)
+        reviewDTO created = dao.selectReviewById(dto.getId(), memberId);
+        created.setImages(dao.selectReviewImages(dto.getId()));
+        return created;
     }
 
     @Override

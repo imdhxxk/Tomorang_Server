@@ -12,6 +12,7 @@ public interface reviewDAO {
     void insertReviewImage(@Param("reviewId") Long reviewId, @Param("url") String url);
     List<reviewDTO> selectReviewsByPostId(@Param("postId") Long postId,
                                           @Param("memberId") String memberId);
+    reviewDTO selectReviewById(@Param("id") Long id, @Param("memberId") String memberId);
     List<String> selectReviewImages(@Param("reviewId") Long reviewId);
 
     void insertReviewLike(@Param("reviewId") Long reviewId, @Param("memberId") String memberId);
